@@ -1,0 +1,106 @@
+TODO:
+webserver;
+
+-access logging
+
+-reading config
+
+-https (too much work; binding to OpenssL?)
+
+-restarting by CTRL-C? or by admin interface?
+
+
+Roads:
+- templates?
+
+
+Roads
+-----
+Manages sessions.
+Implement real random number generator (native).
+Implement SessionIDProvider on top of that.
+
+Init: initialize session id creation, and Reinitialize
+Reinitialize:
+- get resources from old instance (if given)
+- Call Application::Restart with OldResources
+- call phaseOut on old instance (-> it will no longer create new sessions)
+- keep reference to old instance as long as it has active sessions
+- on requests, first ask old instance; it will only response successfully
+  if the request belongs to one of its existing sessions
+- read config file with pairs of relative URLs and functor urls
+  (better than decentralized config)
+- read functors and register functions at urls
+- functions of the old functors instances might still be stored in continuations;
+  eventually these will go away (session expires) and the old functor can be gc'ed
+
+- all registered functions (and only those) are by default permanent urls
+  (and must check whether they have the necessary input)
+- on shutdown: shutdown database(s)
+
+
+Sessions
+For unknown connections, a fresh session is started. The session is identified by a cookie.
+When a session expires, we remove all its continuations.
+
+Authentification
+...
+
+Session -1---n- continuation id -1---1- (space#function)
+
+Representations of a "continuation":
+unique id -> Space#Function
+Function will be execute in a CLONE of the specified space.
+
+When an URL is requested without continuation id and without post parameters
+ (but possibly with get parameters)
+- create a new space; within that:
+- process get params and put them into Session.args
+- execute registered function for html-representation
+- Maybe: pass original request to function/make it possible to customize the response
+- remove "bind" attributes in form; generate unique "name" attribute if none is given
+  replace the action function with a function that does the binding and then calls the
+  otiginal function (not possible for call(url))
+- MAYBE: add hidden authencity token to hinder forged put requests
+- replace "call" attribute values with generated urls
+  - call(FunctionValue) or short:FunctionValue: same base url + new cont. id
+  - call(url): use that url (supposed to be a registered function) + new cont. id
+    (this only makes sense for form actions; otherwise we would use the url directly)
+- for newly created cont. ids: Store cont.id -> Function#CurrentSpace (no cloning necessary
+  because the space will always be cloned before it will be changed)
+- transform to real html and return to client
+
+When an URL is requested without cont. id but with post parameters
+- create new space
+- bind parameters into Session.args
+- create a new url: base url + contin. id
+- store: cont. id -> function#Space with bound parameters
+- 303 redirect to the url (now the current state can be easily navigated to and no
+  double submit problem, but this is not permanently bookmarkable)
+
+When an URL is requested with an expired cont. id:
+- redirect to URL without cont. id (but keep get params)
+
+When an URL is requested with valid cont. id and with or without get params:
+- retrieve Function#Space
+- clone space (function may introduce new bindings to variables in lexical scope 
+  or private session state)
+- bind get params if any
+- execute function in cloned Space
+- ...
+
+When an URL is requested with valid cid and post params:
+- retrieve Function#Space
+- clone Space, bind parameters
+- create a new url with replaced new cont. id
+- store Function#New space unter new id
+- 303 redirect to new url
+
+
+When do continuations expire?
+- normally at the latest when their session expire 
+  (or earlier after a defined time of no-use)
+- functions can still be bookmarked but the private session state, input from post
+  parameters and local variables will be lost
+
+
