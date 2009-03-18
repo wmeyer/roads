@@ -25,6 +25,7 @@ export
    CompareCaseInsensitive
    NubBy
    RemoveTrailingSlash
+   TupleAddFirst
 define
    fun {LazyRead FN}
       InFile={New Open.file init(name:FN)}
@@ -156,4 +157,25 @@ define
 	   end
       end
    end   
+
+   fun {ShiftTuple T Delta}
+      {List.toRecord {Label T}
+       {Map
+	{Record.toListInd T}
+	fun {$ F#V}
+	   if {Int.is F} then F+Delta else F end
+	   #V
+	end
+       }
+      }
+   end
+
+   %% Add E as the first element of tuple T.
+   %% Non-numeric indices in T are allowed.
+   fun {TupleAddFirst T E}
+      {Adjoin
+       unit(E)
+       {ShiftTuple T 1}
+      }
+   end
 end

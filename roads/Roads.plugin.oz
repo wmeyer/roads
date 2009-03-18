@@ -16,6 +16,7 @@ import
 	   ) at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
    Util(intercalate:Intercalate
 	removeTrailingSlash
+	tupleAddFirst:TupleAddFirst
        ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
    Base62('from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
    Validation('class') at 'x-ozlib://wmeyer/roads/Validation.ozf'
@@ -39,6 +40,8 @@ define
 
    ConfigPath = 'x-ozlib://wmeyer/roads/Config.ozf'
 
+   SecretGenerator = {IdIssuer.create}
+   
    %% Initialize all configured applications.
    proc {Initialize ServerName}
       [Config] = {Module.link [ConfigPath]}
@@ -369,13 +372,27 @@ define
       end
    end
 
+   %% Add a secret token to every form to prevent CSRF attacks.
+   fun {AddSecrets H}
+      case H of form(...) then
+	 S = {Int.toString {SecretGenerator}}
+      in
+	 {TupleAddFirst H
+	  input(type:hidden value:S name:roadsSecret validate:is(S))
+	 }
+      elseif {Record.is H} then
+	 {Record.map H AddSecrets}
+      else H
+      end
+   end
+   
    %% Replace special elements in generated html.
    %% (might crash for ill-formed html)
    fun {PreprocessHtml HtmlDoc App Functr Sess CurrentSpace PathComponents}
       Env = {NewCell unit}
       Valid = {NewCell unit}
    in
-      {Html.mapAttributes HtmlDoc
+      {Html.mapAttributes {AddSecrets HtmlDoc}
        proc {$ Tag OpenClose}
 	  case Tag of form andthen OpenClose == open then
 	     Env := {New Environment.'class' init}

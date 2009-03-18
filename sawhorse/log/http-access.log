@@ -1,0 +1,29 @@
+2009-03-19 20:02:39.703 T [server] get: /
+2009-03-19 20:02:39.734 T [server] Response for get: /: 200
+2009-03-19 20:02:39.859 T [server] get: /favicon.ico
+2009-03-19 20:02:39.875 T [server] Response for get: /favicon.ico: 404
+2009-03-19 20:02:45.672 T [server] get: /examples/said
+2009-03-19 20:02:45.812 T [server] Response for get: /examples/said: 303
+2009-03-19 20:02:45.844 T [server] get: /examples
+2009-03-19 20:02:45.875 T [server] Response for get: /examples: 200
+2009-03-19 20:02:50.312 T [server] get: /examples/sum
+2009-03-19 20:02:50.359 T [server] Response for get: /examples/sum: 200
+2009-03-19 20:02:52.953 T [server] get: /examples/sum/ur54u
+2009-03-19 20:15:43.687 T [server] get: /examples/sum/ur54u
+2009-03-19 20:15:43.781 T [server] Response for get: /examples/sum/ur54u: 303
+2009-03-19 20:15:43.828 T [server] get: /examples/sum
+2009-03-19 20:15:43.953 T [server] Response for get: /examples/sum: 200
+2009-03-19 20:15:46.250 T [server] get: /examples/sum/2EQiaT
+2009-03-19 20:15:46.328 T [server] Response for get: /examples/sum/2EQiaT: 200
+2009-03-19 20:15:50.031 T [server] post: /examples/sum/2o9un8
+2009-03-19 20:15:51.125 T [server] Response for post: /examples/sum/2o9un8: 303
+2009-03-19 20:15:51.140 T [server] get: /examples/sum/QawH0
+2009-03-19 20:15:51.203 T [server] Response for get: /examples/sum/QawH0: 200
+2009-03-19 20:15:52.719 T [server] get: /examples/sum/3JylGX
+2009-03-19 20:15:52.781 T [server] Response for get: /examples/sum/3JylGX: 200
+2009-03-19 20:15:57.172 T [server] post: /examples/sum/1GZXU7
+2009-03-19 20:15:57.187 T [server] Response for post: /examples/sum/1GZXU7: 303
+2009-03-19 20:15:57.219 T [server] get: /examples/sum/1o4vnR
+2009-03-19 20:15:57.250 T [server] Response for get: /examples/sum/1o4vnR: 200
+2009-03-19 20:15:58.765 T [server] get: /examples/sum/1Hx8an
+2009-03-19 20:15:58.812 T [server] Response for get: /examples/sum/1Hx8an: 200
