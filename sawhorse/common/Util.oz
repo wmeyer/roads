@@ -25,7 +25,7 @@ export
    CompareCaseInsensitive
    NubBy
    RemoveTrailingSlash
-   TupleAddFirst
+   TupleAdd
 define
    fun {LazyRead FN}
       InFile={New Open.file init(name:FN)}
@@ -158,24 +158,13 @@ define
       end
    end   
 
-   fun {ShiftTuple T Delta}
-      {List.toRecord {Label T}
-       {Map
-	{Record.toListInd T}
-	fun {$ F#V}
-	   if {Int.is F} then F+Delta else F end
-	   #V
-	end
-       }
-      }
-   end
-
-   %% Add E as the first element of tuple T.
+   %% Add E as the last numeric element of tuple T.
    %% Non-numeric indices in T are allowed.
-   fun {TupleAddFirst T E}
+   fun {TupleAdd T E}
+      Index = {FoldL {Filter {Arity T} IsInt} Max 0} + 1
+   in
       {Adjoin
-       unit(E)
-       {ShiftTuple T 1}
-      }
+       unit(Index:E)
+       T}
    end
 end

@@ -16,7 +16,7 @@ import
 	   ) at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
    Util(intercalate:Intercalate
 	removeTrailingSlash
-	tupleAddFirst:TupleAddFirst
+	tupleAdd:TupleAdd
        ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
    Base62('from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
    Validation('class') at 'x-ozlib://wmeyer/roads/Validation.ozf'
@@ -377,7 +377,7 @@ define
       case H of form(...) then
 	 S = {Int.toString {SecretGenerator}}
       in
-	 {TupleAddFirst H
+	 {TupleAdd H
 	  input(type:hidden value:S name:roadsSecret validate:is(S))
 	 }
       elseif {Record.is H} then
