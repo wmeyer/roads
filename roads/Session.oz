@@ -14,6 +14,7 @@ import
    NonSituatedDictionary
    at 'x-ozlib://wmeyer/sawhorse/pluginSupport/NonSituatedDictionary.ozf'
    Cache(create) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cache.ozf'
+   Validator(create) at 'x-ozlib://wmeyer/roads/Validator.ozf'
 export
    FromRequest
    NewId
@@ -50,12 +51,14 @@ define
    end
 
    %% Request -> Maybe Session
+   %% (Always takes the current global state, not session-specific state.)
    fun {FromRequest State Req}
       case {SessionIdFromRequest Req} of nothing then nothing
       [] just(Id) then {GetSession State Id}
       end
    end
    
+   %% (Always takes the current global state, not session-specific state.)
    fun {NewId State}
       Id = {State.sessionIdIssuer}
    in
@@ -64,8 +67,58 @@ define
       end
    end
 
+   %% This is used when Session.validateParameters is called; not when automatic
+   %% validation from form submission is used.
+   proc {ValidateParameters Spec Params}
+      SpecRec = {List.toRecord unit {List.map Spec fun {$ S} {Label S}#S end}}
+   in
+      %% check that everything in Spec exists
+      for S in Spec do
+	 ParameterName = {Label S}
+      in
+	 if {Not {HasFeature Params ParameterName}} then
+	    raise validationFailed("Expected parameter "#ParameterName#" not found.") end
+	 end
+      end
+      %% check that there is a spec for every actual parameter and that it validates
+      {Record.forAllInd Params
+       proc {$ ParamName V}
+	  if {Not {HasFeature SpecRec ParamName}} then
+	     raise validationFailed("Unexpected parameter "#ParamName) end
+	  else
+	     ValidatorSpec = {CondSelect SpecRec.ParamName validate 'true'}
+	     ValFun = if {Procedure.is ValidatorSpec} then ValidatorSpec
+		      else {Validator.create ValidatorSpec}
+		      end
+	  in
+	     case {ValFun ParamName V}
+	     of true then skip
+	     [] false then
+		raise validationFailed("Validation of field \""#ParamName#"\" failed.") end
+	     [] Other then raise validationFailed(Other) end
+	     end
+	  end
+       end
+      }
+   end
+
+   local
+      CookiePort
+      thread
+	 for getCookie(Request Key)#Res in {Port.new $ CookiePort} do
+	    {Cookie.getCookie Request Key Res}
+	 end
+      end
+   in
    %% Add the user interface to a session.
-   fun {AddInterface S}
+   fun {AddInterface State S}
+      fun {GetCookieExt Key}
+	 {Port.sendRecv CookiePort getCookie(S.request Key)}
+      end
+      proc {SetCookie Key ValOrDesc}
+	 (S.cookiesToSend) := (Key#ValOrDesc)|@(S.cookiesToSend)
+      end
+   in
       {AdjoinAt S interface
        {Adjoin S.interface
 	session(
@@ -89,6 +142,9 @@ define
 			   end
 			end
 	   memberParam:fun {$ LI} {HasFeature S.params LI} end
+	   validateParameters:proc {$ Spec}
+				 {ValidateParameters Spec S.params}
+			      end
 	   %% tmp
 	   setTmp:proc {$ LI X} {TmpDict.put S.tmp LI X} end
 	   getTmp:fun {$ LI} {TmpDict.get S.tmp LI} end
@@ -106,11 +162,33 @@ define
 				      end
 	   %% request
 	   request:S.request
+	   %%
+	   regenerateSessionId:proc{$}
+				  NewSessionId = {NewId State}
+			       in
+				  {State.sessions move(@(S.id) NewSessionId) _}
+				  {S.setId NewSessionId}
+				  (S.idChanged) := true %% -> session cookie will be send
+			       end
+	   %% cookies
+	   hasCookie:fun {$ Key}
+			case {GetCookieExt Key} of just(...) then true else false end
+		     end
+	   getCookie:fun {$ Key}
+			case {GetCookieExt Key} of just(C) then C.value
+			else raise unknownCookie(key:Key) end end
+		     end
+	   getCookieExt:fun {$ Key}
+			   case {GetCookieExt Key} of just(C) then C
+			   else raise unknownCookie(key:Key) end end
+			end
+	   setCookie:SetCookie
 	   )
        }
       }
    end
-
+   end
+   
    fun {ExternalInput Xs}
       externalInput(original:Xs escaped:{Value.byNeed fun {$} {Html.escape Xs} end})
    end
@@ -129,25 +207,36 @@ define
    fun {NewSession State Path Id}
       just(App) = {Routing.getApplication State Path}
       Closures = {ClosureDict.new}
+      IdCell = {NewCell Id}
    in
-      {AddInterface
-       session(closures:Closures
-	       removeClosure:proc {$ CId} {ClosureDict.remove Closures CId} end 
-	       private:{PrivateDict.new}
-	       shared:{SharedDict.new}
-	       tmp:{TmpDict.new}
-	       params:unit
-	       interface:App.resources
-	       state:State
-	       contexts:{Context.newDict}
-	       request:unit
-	       id:Id
-	      )
-      }
+      session(closures:Closures
+	      removeClosure:proc {$ CId} {ClosureDict.remove Closures CId} end 
+	      private:{PrivateDict.new}
+	      shared:{SharedDict.new}
+	      tmp:{TmpDict.new}
+	      params:unit
+	      interface:App.resources
+	      state:State
+	      contexts:{Context.newDict}
+	      request:unit
+	      id:IdCell
+	      setId:local %% make id settable from subordinate space
+		       IdPort
+		    in
+		       thread
+			  for NewId in {Port.new $ IdPort} do
+			     IdCell := NewId
+			  end
+		       end
+		       proc {$ Id}
+			  {Port.send IdPort Id}
+		       end
+		    end
+	     )
    end
 
    %% Prepare a session to be used in a user-defined function,
-   fun {PrepareSession Session Req Inputs}
+   fun {PrepareSession State Session Req Inputs}
       RealInputs
       S2
    in
@@ -158,12 +247,14 @@ define
 	 RealInputs = Inputs
 	 S2 = Session
       end
-      {AddInterface
+      {AddInterface State
        {AdjoinList S2
 	[params#RealInputs
 	 private#{PrivateDict.clone Session.private}
 	 tmp#{TmpDict.new}
 	 request#Req
+	 idChanged#{NewCell false}
+	 cookiesToSend#{NewCell nil}
 	]}
       }
    end

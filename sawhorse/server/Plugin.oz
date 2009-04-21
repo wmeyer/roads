@@ -6,24 +6,26 @@ import
    Util(endsWith:EndsWith) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 export
    LoadPlugins
+   InitializePlugins
    ShutDownPlugins
    Find
    Call
 define
-   fun {LoadPlugins Config OldConfig}
-      Ps = {LinkPlugins Config.pluginDir}
-   in
-      {Record.forAllInd Ps
+   fun {LoadPlugins Config}
+      {LinkPlugins Config.pluginDir}
+   end
+
+   proc {InitializePlugins Config OldConfig}
+      {Record.forAllInd Config.plugins
        proc {$ URL Mod}
 	  if {HasFeature OldConfig plugins}
 	     andthen {HasFeature OldConfig.plugins URL} then
-	     {Mod.reinitialize Config.serverName OldConfig.plugins.URL}
+	     {Mod.reinitialize Config OldConfig.plugins.URL}
 	  else
-	     {Mod.initialize Config.serverName}
+	     {Mod.initialize Config}
 	  end
        end
       }
-      Ps
    end
 
    fun {LinkPlugins PluginDir}

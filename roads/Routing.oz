@@ -48,7 +48,9 @@ define
    end
 
    fun {BuildPath Xs}
-      &/|{Intercalate {Filter {Map Xs Atom.toString} fun {$ X} X \= nil end} "/"}
+      Components = {Filter {Map Xs Atom.toString} fun {$ X} X \= nil end}
+   in
+      {VirtualString.toString "/"#{Intercalate Components "/"}}
    end
 
    fun {ToCandidates Rec}

@@ -9,7 +9,7 @@ import
 define
    {System.showInfo "starting..."}
    
-   S = {Server.start}
+   S = {Server.start config}
 
    StdIn = {New class $ from Open.file Open.text end init(name:stdin flags:[read text])}
 
@@ -28,11 +28,12 @@ define
    
    for Cmd in {StdInStream} do
       case {StripCr Cmd}
-      of "restart" then {System.showInfo "Restarting server..."} {Server.restart S}
+      of "restart" then {System.showInfo "Restarting server..."} {Server.restart S config}
       [] "shutdown" then {System.showInfo "Killing server..."}
 	 {Server.kill S} {Application.exit 0}
       [] "panel" then {Panel.object open}
-      [] "gc" then {System.showInfo "Executing garbage collection..."} {System.gcDo} {System.showInfo "done"}
+      [] "gc" then {System.showInfo "Executing garbage collection..."}
+	 {System.gcDo} {System.showInfo "done"}
       [] "memory" then
 	 {System.showInfo "Memory stats:"}
 	 {System.showInfo "active: "#{Property.get 'gc.active'}}

@@ -4,24 +4,29 @@ declare
 functor Pages
 export
    Said
+   HandleSaid
    After
 define
    fun {Said Session}
-      Foo
-   in
-      form(input(type:text bind:Foo)
+      form(input(type:text name:foo)
 	   input(type:submit)
-	   method:post
-	   action:fun {$ S}
-		     p(a("click here"
-			 href:fun {$ S}
-				 p("you said: "#Foo)
-			      end
-			))
-		  end
+	   method:get
+	   action:"/handleSaid" %url(function:handleSaid)
 	  )
    end
-   
+
+   fun {HandleSaid S}
+      Foo = {S.getParam foo}
+   in
+      {S.validateParameters [foo(validate:length_in(1 10))]}
+      p(a("click here"
+	  href:fun {$ S}
+		  {S.regenerateSessionId}
+		  p("you said: "#Foo)
+	       end
+	 ))
+   end
+
    fun {After Session Doc}
       html(head(title("Said"))
 	   body(Doc)

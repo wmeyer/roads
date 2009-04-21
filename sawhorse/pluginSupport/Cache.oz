@@ -11,8 +11,7 @@ export
 define
    %% Not requested items are discarded after Milliseconds,
    %% at the latest after 2*Milliseconds.
-   %% Returns a condGet function.
-   %% Clear: procedure to clear the cache
+   %% Returns an object. See code for methods.
    fun {Create Milliseconds Finalizer}
       SharedPort
       Nothing = {NewName}
@@ -37,6 +36,12 @@ define
 	       Result = unit
 	    [] getSize then
 	       Result := {Length {Dictionary.items @Cache}}
+	    [] move(Key NewKey) then
+	       Val = {Dictionary.get @Cache Key}.1
+	    in
+	       {Dictionary.remove @Cache Key}
+	       (@Cache).NewKey := Val#{Now}
+	       Result = unit
 	    end
 	    MinimizerThread := {StartMinimizer Cache Milliseconds Finalizer}
 	 end

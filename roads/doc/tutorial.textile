@@ -1,0 +1,179 @@
+h2. The Roads Web Application Framework
+
+Welcome to the official Roads tutorial. Roads is the first web application framework for "Mozart/Oz":http://www.mozart-oz.org.
+
+h3. Contents
+
+# "Getting Started":#gettingstarted
+# "The Arc Challenge":#arcchallenge
+# [[The Session Object]]
+# [[Security]]
+# [[Application Deployment]]
+# [[Interacting with a Model Layer and a Database]]
+# [[Other Features]]
+
+h3. Getting Started
+<a name="gettingstarted"></a>
+
+We expect the reader to be familiar with basic HTML and the Oz programming language.
+Roads was developed using "Mozart 1.4.0":http://www.mozart-oz.org/download/view.cgi?action=default&version=1.4.0. It might also work with older versions.
+
+h4. Installing the web server: Sawhorse
+
+Download the "Sawhorse":http://example.org web server, unpack it, and build it with <code>build.sh</code>.
+<b>On Windows, you will need Cygwin with GCC installed.</b> Sawhorse is basically a port of the "Haskell Web Server":http://darcs.haskell.org/hws/ to Oz, extended with a plugin system. Sawhorse is currently the only web server supported by Roads.
+
+h4. Installing and Testing Roads
+
+Next, download "Roads":http://example.com, unpack it and run <code>build.sh</code>.
+
+Now, lets try a "Hello, world"-application by starting the Emacs-based Mozart OPI and copy-pasting the following code:
+
+<pre><code>declare
+   [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}  %% link to Roads
+
+   fun {HelloWorld Session}  %% 'Session': unused in this example
+      html(head(title("Hello"))
+           body(p("Hello, world!"))
+          )
+   end
+in
+   {Roads.registerFunction hello HelloWorld}
+   {Roads.run}
+</code></pre>
+Execute the code in Emacs (menu Oz->Feed Buffer) and navigate to "http://localhost:8080/hello":http://localhost:8080/hello in your web browser.
+You can stop the application (and the web server) by feeding the line
+<pre><code>{Roads.shutDown}</code></pre> or by halting Oz with <code>C-. h</code>. 
+
+In case of problems, you might want to add the line <code>{Roads.setSawhorseOption errorLogFile stdout}</code> before <code>{Roads.run}</code>. Then you will be able to see error log messages directly in the OPI.
+
+This simple example just returns a "record":http://www.mozart-oz.org/home/doc/tutorial/node3.html#label19 value which represents a minimalistic, static HTML page. Let’s continue with a more interesting example.
+
+h3. The Arc Challenge
+<a name="arcchallenge"></a>
+
+In Februar 2008, Paul Graham proposed The Arc Challenge:
+
+bq. Write a program that causes the url <code>said</code> (e.g. <code>http://localhost:port/said</code>) to produce a page with an input field and a submit button. When the submit button is pressed, that should produce a second page with a single link saying "click here." When that is clicked it should lead to a third page that says "you said: ..." where ... is whatever the user typed in the original input field. The third page must only show what the user actually typed. I.e. the value entered in the input field must not be passed in the url, or it would be possible to change the behavior of the final page by editing the url.
+
+A possible solution to this challenge in Roads looks like this:
+
+<pre><code>declare
+   [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+
+   fun {Said Session}
+      Foo  %% declares a local variable "Foo"
+   in
+      form(input(type:text bind:Foo)
+           input(type:submit)
+           method:post
+           action:fun {$ _}  %% an anonymous function which takes one unused argument
+                     p(a("click here" 
+                         href:fun {$ _}
+                                 p("you said: "#Foo)  %% '#' concatenates strings
+                              end
+                      ))
+                  end
+          )
+   end
+in
+   {Roads.registerFunction said Said}
+   {Roads.run}
+</code></pre>
+      
+Most of the code in the <code>Said</code> function is just standard HTML, encoded as an Oz record. There are however two Roads-specific extensions in this example:
+# Input tags can have an additional <code>bind</code> attribute. The variable specified with
+this attribute will receive the submitted value.
+# <code>href</code> and <code>action</code> attributes can take function values instead of URLs. These are automatically converted to unique URLs. When these URLs are requested, the framework will make sure that the right function is called in the right context.
+
+By using anonymous functions and exploiting lexical scoping, we are able to access the <code>Foo</code> variable and embed the user-entered text into our output.
+
+What happens when we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to different values. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in section "Communicating through Ports":#ctp.<br>
+The bottom line is that this function will behave as expected. Every invocation of the innermost nested function will have its own, independent value for <code>Foo</code>. Consequent or concurrent submission will never accidentally interact with each other.
+
+h4. Grouping Functions in Functors
+
+There is one real problem with this example, though. The three functions do not return valid HTML documents but only fragments. We could fix this by extending all three function with <code>html(body(...))</code>. However, there is a simpler way to share code between multiple functions.
+
+To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document:
+
+<pre><code>declare
+[Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+
+functor Pages
+export
+   said:Said  %% export as 'said'
+   After
+define
+   fun {Said Session}
+      Foo
+   in
+      form(input(type:text bind:Foo)
+           input(type:submit)
+           method:post
+           action:fun {$ _}
+                     p(a("click here" 
+                         href:fun {$ _}
+                                 p("you said: "#Foo)
+                              end
+                      ))
+                  end
+          )
+   end
+   
+   fun {After Session Doc}
+      html(head(title("Said"))
+           body(Doc)
+	  )
+   end
+end
+
+in
+
+{Roads.registerFunctor '' Pages}  %% map functor to the empty path
+{Roads.run}
+</code></pre>
+
+Note that we use <code>registerFunctor</code> instead of <code>registerFunction</code>.
+We are registering the functor using the empty "atom":http://www.mozart-oz.org/home/doc/tutorial/node3.html#label18 <code>''</code>. The resulting URL is still "http://localhost:8080/said":http://localhost:8080/said because <code>Said</code> is exported using the atom <code>said</code>.
+
+Instead of the literal functor value, we could also have specified the path to a compiled functor.
+
+You might have noticed that all HTML-generating functions take one argument: the session object. We did not use it so far, but in the next section you will see why it is useful.
+
+Next: [[The Session Object]]
+
+
+h3. The Session Object
+
+security
+
+h3. Application Deployment
+
+h4. Hot Code Swapping
+
+h4. Application Configuration
+
+h4. Making Requests Bookmarkable
+
+h3. Interacting with a Model Layer and a Database
+
+h4. Communicating through Ports
+<a name="ctp"></a>
+
+h4. Working without Computation Spaces
+
+h3. User Authentication
+
+Example implementation.
+
+h3. Other Features
+
+h4. Controlling URL Expiration
+
+h4. Reading and Setting Cookies
+
+h4. Sawhorse Configuration
+
+
+

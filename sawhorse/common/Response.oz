@@ -143,6 +143,7 @@ define
    end
 
    fun {LastModifiedHeader T} {Append "Last-Modified: " {FormatTime T}} end
+
    fun {ExpiresHeader T} {Append "Expires: " {FormatTime T}} end
    
    fun {LocationHeader L} {Append "Location: " L} end
@@ -220,7 +221,9 @@ define
    VersionNotSupportedResponse          = {ErrorResponse 505}
 
    fun {RedirectResponse Config Code NewLocation}
-      response(code:Code headers:[{LocationHeader NewLocation}]
+      response(code:Code
+	       headers:[{ContentTypeHeader mimeType( text html )}
+			{LocationHeader NewLocation}]
 	       coding:nil
 	       body:generated(
 		       {VirtualString.toString "<a href=\""#NewLocation#"\">redirect</a>"})

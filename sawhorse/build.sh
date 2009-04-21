@@ -1,1 +1,1 @@
-ozmake --install --grade=freshen
+ozmake --debug --install --grade=freshen

@@ -1,0 +1,152 @@
+h2. The Session Object
+
+When an URL is requested, Roads calls the associated function with a session object as its sole argument. Sessions are established and identified with a cookie (named "roadsSession").
+
+The session object provides access to different types of session state. In this section, we will explain which type of state is useful in which situation and how to use the session object to read and change session values.
+
+h3. Session-specific private state
+
+Private state is represented by a dictionary with values than can be accessed only in subsequent function calls.The dictionary is copied before any function call, so changes never affect previously visited sites.
+This is useful for sequence-specific state. Imagine a search function with multiple result pages. You would store the search term in the private dictionary. When the user navigates to the next result page, you use the stored search term to run the search process (with an increased offset value). At the same time, the user might have opened another tab with a different search task. Because the search term is stored in the private dictionary, it will not disturb the other task. 
+
+h4. Interface
+
+* <code>{Session.get <key>}</code>
+* <code>{Session.condGet <key> <default>}</code>
+* <code>{Session.set <key> <value>}</code>
+* <code>{Session.member <key>}</code>
+* <code>{Session.remove <key>}</code>
+
+<p>
+
+h4. Example
+
+<pre><code>declare
+   [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+
+   fun {Counter Session}
+     Count = {Session.condGet count 0}
+   in
+     'div'(
+       h1("Counter: "#Count)
+       p(a("++" href:fun {$ S} {S.set count Count+1} {Counter S} end)
+         "&nbsp;&nbsp;"
+         a("--" href:fun {$ S} {S.set count Count-1} {Counter S} end)
+        )
+     )
+   end
+in
+   {Roads.registerFunction counter Counter}
+   {Roads.run}
+</code></pre>
+
+If you open one of the <code>++</code> or <code>--</code> links in a new tab, you basically create a new counter. You will find that it operates independently from the other tabs.
+
+h3. Session-specific shared state
+
+Shared values are available anywhere in a session, regardless of how we got to a specific page. Typical candidates for this category are the user login name or the contents of a shopping cart.
+
+h4. Interface
+
+* <code>{Session.getShared <key>}</code>
+* <code>{Session.condGetShared <key> <default>}</code>
+* <code>{Session.setShared <key> <value>}</code>
+* <code>{Session.memberShared <key>}</code>
+* <code>{Session.removeShared <key>}</code>
+
+<p>
+
+h4. Example (fragment)
+
+<pre><code>case {Session.condGetShared user none}
+of none then "Permission denied."
+[] User then "Welcome "#User#"!"
+end
+</code></pre>
+
+Note that Roads does not provide a built-in user authentication system. The use of the key <code>user</code> is an arbitrary choice here.
+
+
+h3. Parameter Values
+
+POST and GET parameters can be accessed under their name, i.e. the identifier that was specified with the <code>name</code> attribute of the <code>input</code> tag. This is an alternative to the usage of the Roads-specific <code>bind</code> attribute.
+
+h4. Interface
+* <code>{Session.getParam <key>}</code>
+* <code>{Session.condGetParam <key> <default>}</code>
+* <code>{Session.memberParam <key>}</code>
+
+<p>
+
+h4. Example
+
+An alternative implementation of the <code>Said</code> function of the previous section:
+
+<pre><code>declare
+   [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+
+   fun {AlternativeSaid _}
+     form(
+       input(type:text name:foo)
+       input(type:submit)
+       method:post
+       action:fun {$ Session}
+                Foo = {Session.getParam foo}
+	      in
+                p(a("click here"
+                    href:fun {$ _}
+                           p("you said: "#Foo)
+                         end
+                ))
+              end
+     )
+   end
+in
+   {Roads.registerFunction said AlternativeSaid}
+   {Roads.run}
+</code></pre>
+
+
+h3. Temporary Values
+
+Temporary state can be useful to pass values to the <code>After</code> function. The temporary state dictionary is cleared after every request.
+
+h4. Interface:
+* <code>{Session.getTmp <key>}</code>
+* <code>{Session.condGetTmp <key> <default>}</code>
+* <code>{Session.setTmp <key> <value>}</code>
+* <code>{Session.memberTmp <key>}</code>
+* <code>{Session.removeTmp <key>}</code>
+
+<p>
+
+h4. Example (fragment)
+
+<pre><code>fun {Hello Session}
+  {Session.setTmp pageTitle "Hello world"}
+  p("Hello world!")
+end
+
+fun {After Session Doc}
+  html(
+    head(title({Session.condGetTmp pageTitle "unnamed"}))
+    body(Doc)
+  )
+end
+</code></pre>
+
+h3. Other Uses of the Session Object
+
+The session object also provides access to the original HTTP request object.
+For example, <code>Session.request.headers</code> is a list of all HTTP headers.
+Other features of the request object include:
+
+* <code>cmd</code>: the HTTP command, e.g. <code>post</code> or <code>get</code>
+* <code>uri</code>: the URL as an Oz "URL":http://www.mozart-oz.org/home/doc/system/node49.html record
+* <code>originalURI:</code>: the unparsed URL as a string 
+* <code>httpVersion:</code>: the HTTP version as an integer, e.g. <code>11</code>
+
+Additionally, the session object allows access to application-specific resources (see chapter [[Application Deployment]]) and contains procedures for [[Controlling URL Expiration]].
+
+Previous: [[Home]] &nbsp;&nbsp; Next: [[Security]]
+

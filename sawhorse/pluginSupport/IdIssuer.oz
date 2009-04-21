@@ -4,7 +4,7 @@ import
 export
    Create
 define
-   fun {Create}
-      {RandomNumberGenerator.create 4}
+   fun {Create Bytes}
+      {RandomNumberGenerator.create Bytes}
    end
 end

@@ -1,6 +1,7 @@
 functor
-export
-   Config
+import
+   Roads at 'x-ozlib://wmeyer/roads/TheRoads.ozf'
 define
-   Config = config(functors:unit('':'x-ozlib://wmeyer/roads/examples/Examples.ozf'))
+   {Roads.registerFunctor examples 'x-ozlib://wmeyer/roads/examples/Examples.ozf'}
+   {Roads.run}
 end

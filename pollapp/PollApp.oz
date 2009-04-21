@@ -4,18 +4,17 @@ import
    Model
    System
 export
-   Config
+   Functors
+   PagesExpireAfter
    Init
    ShutDown
    Before
    After
 define
-   Config =
-   config(functors:unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
-			'admin':'x-ozlib://wmeyer/pollapp/Admin.ozf'
-		       )
-	  pagesExpireAfter:0
-	 )
+   Functors = unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
+		   'admin':'x-ozlib://wmeyer/pollapp/Admin.ozf'
+		  )
+   PagesExpireAfter=0
 
    fun {Init}
       Db = {DBServer.create
@@ -143,7 +142,7 @@ define
 			html(
 			   body(
 			      p("Passwords do not match.") br
-			      a(href:Login "Try again")
+			      a(href:fun {$ S} {Login S Fun} end "Try again")
 			      )
 			   )
 		     end

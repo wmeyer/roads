@@ -222,7 +222,7 @@ define
       {VirtualString.toString
        (1900+T.year)#
        DateSep#{FormatInt 1+T.mon 2}#
-       DateSep#{FormatInt 1+T.mDay 2}#
+       DateSep#{FormatInt T.mDay 2}#
        DateTimeSep#{FormatInt T.hour 2}#
        TimeSep#{FormatInt T.min 2}#
        TimeSep#{FormatInt T.sec 2}#

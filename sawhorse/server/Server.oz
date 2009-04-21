@@ -20,20 +20,22 @@ import
    at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
    MimeTypes(init:InitMimeTypes mimeTypeOf:MimeTypeOf)
    Logging(newLogger:NewLogger newStream:NewStream)
-   Plugin(loadPlugins shutDownPlugins find call)
+   Plugin(loadPlugins initializePlugins shutDownPlugins find call)
    Query(parse)
    OS
    OsTime
    Open
    Module
    Property(put)
+   Resolve
+   Path at 'x-oz://system/os/Path.ozf'
 export
    Start
    Restart
    Kill
 define
-   proc {Restart S}
-      {RaiseTo S restart}
+   proc {Restart S Config}
+      {RaiseTo S restart(Config)}
    end
 
    proc {Kill S}
@@ -47,7 +49,7 @@ define
       L = {NewLock}
       R = {NewCell false}
    in
-      fun {Start}
+      fun {Start Config}
 	 %% make sure we are not already running
 	 lock L then
 	    if @R then
@@ -57,7 +59,7 @@ define
 	       R := true
 	       Thread =
 	       {SafeThread
-		unit(run:proc {$} {StartServer Thread config} end
+		unit(run:proc {$} {StartServer Thread Config config} end
 		     blocked:true
 		     'finally':proc {$}
 				  lock L then R:= false end
@@ -70,8 +72,24 @@ define
       end
    end
 
-   proc {StartServer Thread OldConfig}
-      {Server Thread {ReadConfig OldConfig}}
+   fun {CombineConfig Conf1 Conf2}
+      Plugins = {Adjoin {CondSelect Conf1 plugins plugins}
+		 {CondSelect Conf2 plugins plugins}}
+   in
+      {AdjoinAt {Adjoin Conf1 Conf2} plugins Plugins}
+   end
+   
+   proc {StartServer Thread Config OldConfig}
+      Conf = {LoadMimeTypes
+	      {LoadPlugins
+	       {AddLogging
+		{CombineConfig {ReadConfig OldConfig} Config}
+	       }
+	      }
+	     }
+   in
+      {Plugin.initializePlugins Conf OldConfig}
+      {Server Thread Conf}
    end
 
    fun {TryLink URI}
@@ -83,9 +101,15 @@ define
       catch _ then nothing
       end
    end
+
+   proc {CreateIfNotExists DirPath}
+      if {Not {Path.exists DirPath}} then
+	 {OS.mkDir DirPath [ 'S_IRUSR' 'S_IWUSR' 'S_IXUSR' ]}
+      end
+   end
    
    local
-      DefaultConfig = config(port:80
+      DefaultConfig = config(port:8080
 			     requestTimeout: 300
 			     keepAliveTimeout: 15
 			     acceptTimeOut:2*60*1000
@@ -93,50 +117,65 @@ define
 			     directoryIndex: "index.html"
 			     serverName: "localhost"
 			     serverAlias: nil
-			     typesConfig: "./mime.types"
+			     typesConfig: "x-ozlib://wmeyer/sawhorse/mime.types"
 			     defaultType:mimeType(text plain)
 			     mimeTypes:mimeTypes
 			     serverAdmin:"administrator@localhost"
-			     logDir:"log"
+			     logDir: "sawhorse-log"
 			     accessLogFile:"http-access.log"
 			     accessLogLevel:trace
-			     errorLogFile:stdout
-			     errorLogLevel:error
+			     errorLogFile:"http-error.log"
+			     errorLogLevel:trace
 			     pluginDir:"x-ozlib://wmeyer/sawhorse/plugins"
 			     plugins:unit
 			    )
    in
       fun {ReadConfig OldConfig}
-	 Config =
 	 case {TryLink 'x-ozlib://wmeyer/sawhorse/server/Configuration.ozf'}
 	 of nothing then DefaultConfig
 	 [] just(C) then C.config
 	 end
-	 MimeTypes = try {InitMimeTypes Config.typesConfig}
-		     catch E then {LogException E} mimeTypes
-		     end
-	 AccessStream = {NewStream init(Config.accessLogFile
-					dir:Config.logDir)}
-	 unit(trace:LogAccess ...) = {NewLogger init(module:"server"
-						     stream:AccessStream
-						     logLevel:Config.accessLogLevel)}
-	 ErrorStream = {NewStream init(Config.errorLogFile
-				       dir:Config.logDir)}
-	 unit(error:LogError
-	      debug:_
-	      trace:Trace
-	      t:_
-	      exception:LogException
-	     ) = {NewLogger init(module:"server" stream:ErrorStream logLevel:Config.errorLogLevel)}
-      in
-	 {AdjoinList Config [mimeTypes#MimeTypes
-			     plugins#{Plugin.loadPlugins Config OldConfig}
-			     logError#LogError
-			     logException#LogException
-			     logAccess#LogAccess
-			     trace#Trace
-			    ]}
       end
+   end
+
+   fun {AddLogging Config}
+      {CreateIfNotExists Config.logDir}
+      AccessStream = {NewStream init(Config.accessLogFile
+				     dir:Config.logDir)}
+      unit(trace:LogAccess ...) = {NewLogger init(module:"server"
+						  stream:AccessStream
+						  logLevel:Config.accessLogLevel)}
+      ErrorStream = {NewStream init(Config.errorLogFile
+				    dir:Config.logDir)}
+      unit(error:LogError
+	   debug:_
+	   trace:Trace
+	   t:_
+	   exception:LogException
+	  )
+      = {NewLogger init(module:"server" stream:ErrorStream logLevel:Config.errorLogLevel)}
+   in
+      {AdjoinList Config [logError#LogError
+			  logException#LogException
+			  logAccess#LogAccess
+			  trace#Trace
+			 ]}
+   end
+
+   fun {LoadMimeTypes Config}
+      MimeFile = {Resolve.localize Config.typesConfig}.1
+      MimeTypes = try {InitMimeTypes MimeFile}
+		  catch E then {Config.logException E} mimeTypes
+		  end
+   in
+      {AdjoinAt Config mimeTypes MimeTypes}
+   end
+
+   fun {LoadPlugins Conf}
+      Plugins = {Adjoin {CondSelect Conf plugins plugins}
+		 {Plugin.loadPlugins Conf}}
+   in
+      {AdjoinAt Conf plugins Plugins}
    end
 
    proc {Server Thread Config}
@@ -156,9 +195,9 @@ define
 	     end
 	  end
 	 }
-      catch restart then
+      catch restart(NewConfig) then
 	 %% log
-	 {StartServer Thread Config}
+	 {StartServer Thread NewConfig Config}
       [] kill then
 	 %% log
 	 {Plugin.shutDownPlugins Config}

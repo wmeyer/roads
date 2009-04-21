@@ -101,6 +101,10 @@ define
 			       #"\" must match the regular expression \""#RE#"\".")
 	 end
       end
+
+      meth 'true'(result:R)
+	 R = true
+      end
    end
    
    fun {Create Spec}

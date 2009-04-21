@@ -1,3 +1,4 @@
 makefile(
-   lib:['ExamplesApp.ozf' 'Examples.ozf' 'Said.ozf']
+   lib:['ExamplesApp.ozf' 'Examples.ozf'
+       ]
    )

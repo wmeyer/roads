@@ -1,0 +1,169 @@
+h2. Security
+
+This chapter is about common security threats to web applications and how Roads helps to prevent them. Roads does not totally avoid these threats, so as a developer you have to be familiar with them.
+
+bq. <b>Roads does currently not support the HTTPS protocol and is therefore not suited for high-security applications at this point of its developement.</b>
+
+<br>
+
+h3. Cross-site Scripting (XSS)
+
+"This vulnerability":http://en.wikipedia.org/wiki/Cross-site_scripting is about harmful code injected into a web app by malicious users with the intention to be executed in web pages viewed by other users. The most important rule for mitigation is to
+
+bq. <b>NEVER TRUST USER INPUT!</b>
+
+Roads supports this necessary paranoia by (semi-)automatically HTML-escaping user input and by providing a mechanism for input validation.
+
+h4. Escaping
+
+If you revisit the "Arc Challenge" example of the [[Home|first chapter]] and enter something like <code><b>bold text</b></code>, you will find that the text will _not_ appear bold in the result page. Instead, the literal HTML code will be shown. However, it is still possible to access the unescaped input. How is this implemented?
+POST/GET parameters are presented to the application code as two-element record values. The above input looks like this to the application:
+<pre><code>externalInput(original:"<b>bold text</b>"
+              escaped:"&lt;b&gt;bold text&lt;&#x2F;b&gt;")</code></pre>If such a composite value is embedded in HTML code, Roads will automatically choose the escaped version. When sending data to the model layer, the developer has to choose which value to use. 
+
+Note that Roads does currently not support automatic CSS, Javascript or URL escaping. If you want to use user input within CSS code, scripts or URLs, you have to ensure escaping manually.
+
+If you use a database layer vulnerable to SQL injection, you need to sanitize the user input manually, too.
+
+h4. Input Validation for Form Submissions
+
+If all input is properly escaped, input validation is strictly speaking not necessary to prevent XSS attacks. However, it is very useful to enforce other types of constraints on input data.
+
+To validate input values from form submissions, we can specify a function for every <code>input</code> tag. Such a validation function takes two arguments: the id of the input field (as specified with the <code>id</code> attribute) and the input value as a string. It returns
+* <code>true</code> if the value is valid,
+* <code>false</code> if the value is not valid and no custom error message is required,
+* <code>'false'("Custom error message")</code> if the value is not valid and we want  to provide an error message, or
+* <code>'false'(AltFunction)</code> if the value is not valid and we want to execute the function <code>AltFunction</code> instead of the <code>action</code> function.
+<br>
+<br>
+
+h4. Example (fragment)
+
+This functions lets the user enter a natural number and displays it back to them:
+
+<pre><code>fun {EnterInt Session}
+  V
+in
+  form(
+    input(type:text bind:V
+          validate:fun {$ _ X} {All X Char.isDigit} end)
+    input(type:submit)
+    method:post
+    action:fun {$ _} "You entered: "#{String.toInt V.original} end
+  )
+end
+</code></pre>
+
+Some validation requirements are very common. Instead of a validation function, you may specify one of the following values for the <code>validate</code> attribute:
+* <code>length_in(MinLen MaxLen)</code> to constraint the string length to an interval.
+* <code>length_is(Len)</code> to insist on an exact length.
+* <code>is_int</code> to expect an integer as accepted by "<code>StringToInt</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
+* <code>is_float</code> for floating point numbers as accepted by "<code>StringToFloat</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
+* <code>is(Val</code> to insist on one specific value.
+* <code>one_of(Val1 Val2 ... ValN)</code> to accept one of multiple constant values.
+* <code>not_one_of(Val1 Val2 ... ValN)</code> to accept all but a number of constant values.
+* <code>regex("RegularExpression")</code> to validate a parameter with a "regular expression":http://www.mozart-oz.org/home/doc/contrib/node1.html.
+<br>
+<br>
+
+h4. Example (fragment)
+
+To restrict the length of the user name and the password in a login form, we could use the <code>length_in</code> validator:
+
+<pre><code>form(
+  table(
+    tr(td(label('for':"Login" "Login: "))
+       td(input(type:text id:"Login" bind:Login
+                validate:length_in(4 12))))
+    tr(td(label('for':"Password" "Password: "))
+       td(input(type:password id:"Password" bind:Password
+                validate:length_in(5 12))))
+...
+  )
+)
+</code></pre>
+
+h4. Input Validation with public GET handlers
+
+It is possible to explicitly register GET handler functions under a URL. This is useful to make the result of a GET request bookmarkable for the user.
+
+Note that the validation mechanism of the previous section is not applicable for such functions because they are not necessarily called through form submissions. In this case you may validate the input parameters by an explicit call to <code>Session.validateParameters</code> which takes a list of parameter specifications.
+As an example, let's look at a version of the Arc Challenge implementation with a bookmarkable "click here" page. "Bookmarkable" means that the URL can be used from within a new session, e.g. from a different computer or after a server reboot.
+
+h4. Example
+
+<pre><code>declare
+[Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+
+functor Pages
+export
+   Said
+   HandleSaid
+   After
+define
+   fun {Said Session}
+      form(input(type:text name:foo)
+           input(type:submit)
+           method:get  %% using GET instead of POST to encode the input in the URL
+           action:url(function:handleSaid)
+	  )
+   end
+
+   fun {HandleSaid S}
+      {S.validateParameters [foo(validate:length_in(1 10))]}
+      Foo = {S.getParam foo}
+   in
+      p(a("click here"
+          href:fun {$ _}
+                  p("you said: "#Foo)
+               end
+       ))
+   end
+
+   fun {After Session Doc}
+      html(head(title("Said"))
+           body(Doc)
+	  )
+   end
+end
+
+in
+
+{Roads.registerFunctor '' Pages}
+{Roads.run}
+</code></pre>
+
+The <code>HandleSaid</code> function expects exactly exactly one GET parameter with its length constrained to 1 to 100. If the validation fails, an error message (including the problematic parameter) will be shown to the user.
+
+Note that we specify the record value <code>url(function:handleSaid)</code> for the <code>action</code> attribute. We could have written <code>"/handleSaid"</code> instead. However, if we ever change the (currently empty) path of the functor, we have to manually adjust the path for <code>action</code>. By using <code>url(...)</code>, we automatically get a URL relativ to the current functor.
+
+<br>
+
+h3. Session Hijacking
+
+"Session hijacking":http://en.wikipedia.org/wiki/Session_hijacking is a technique where an attacker tries to find out the session id which is used to identify a user to a web application, and uses this id to execute requests in the name of the user.
+
+Roads uses random 64-bit values as session ids. These random values are created using <code>dev/urandom</code> on Unix-like systems and <code>CryptGenRandom</code> on Windows, so they are cryptographically secure. It is therefore virtually impossible to simply guess a session id.
+
+Roads applies the "HttpOnly":http://www.owasp.org/index.php/HTTPOnly flag to prevent the session id to be stolen in case of XSS vulnerabilities. (This does only work in some browsers.)
+
+It is possible for an application to request a new session id for the current session. This is done by calling <code>{Session.regenerateSessionId}</code>. It makes sense to call this function after a successfull login attempt to prevent <b>"session fixation":http://en.wikipedia.org/wiki/Session_fixation</b>.
+
+It should be noted that these measures are <b>not sufficient</b> to prevent session hijacking completely. Roads does currently not support the HTTPS protocol, which would be necessary to prevent attacks by packet sniffing. With packet sniffing, it is possible to steal both session ids and credentials used during the login process.
+<br>
+
+<br>
+
+h3. Cross-site Request Forgery (CSRF)
+
+This type of '"attack works by including a link or script in a page that accesses a site to which the user is known (or is supposed) to have authenticated":http://en.wikipedia.org/wiki/Cross-site_request_forgery'.
+
+When a form is submitted in Roads, a generated URL is requested that leads to an internal function which validates inputs, binds variables and calls a application-specific handler function . This URL contains a random id which can usually not be guessed.
+Additionally, all Roads forms (with a function value as the action handler) contain a hidden element with a one-time secret token. If a request with an invalid token is received, validation will fail.
+
+bq. <b>Therefore, with normal usage patterns, CSRF attacks are not possible with Roads applications.</b>
+
+However, if you write a POST/GET handler function and explicitly register it under a URL to make it bookmarkable, the function will be reachable from the outside and CSRF attacks are possible. You should therefore only do this with functions which are free of side effects and therefore uninteresting for attackers.
+
+
+Previous: [[The Session Object]] &nbsp;&nbsp; Next: [[Application Deployment]]

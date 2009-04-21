@@ -1,8 +1,13 @@
 functor
 export
+   Is
    To
    From
 define
+   fun {Is Ys}
+      {All Ys IsDigit}
+   end
+   
    fun {To IZ}
       fun {Do X}
 	 if X == 0  then nil
@@ -42,5 +47,13 @@ define
       elseif X >= &A andthen X =< &Z then X - &A + 10
       elseif X >= &a andthen X =< &z then X - &a + 36
       end
+   end
+
+   fun {IsDigit X}
+      X >= &0 andthen X =< &9
+      orelse
+      X >= &A andthen X =< &Z
+      orelse
+      X >= &a andthen X =< &z
    end
 end
