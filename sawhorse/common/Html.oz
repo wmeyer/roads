@@ -64,7 +64,7 @@ define
 	  {Filter
 	   {Map {Record.toListInd H}
 	    fun {$ I#A}
-	       if {IsAtom I} then {Fun I A}
+	       if {IsAtom I} then {Fun I A H}
 	       else I#{MapAttributes A TagNotifier Fun}
 	       end
 	    end

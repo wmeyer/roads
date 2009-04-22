@@ -190,7 +190,8 @@ define
    end
    
    fun {ExternalInput Xs}
-      externalInput(original:Xs escaped:{Value.byNeed fun {$} {Html.escape Xs} end})
+      externalInput(original:Xs
+		    escaped:{Value.byNeed fun {$} {Html.escape Xs} end})
    end
    
    proc {Destroy Session}

@@ -65,7 +65,8 @@ define
 	 R =
 	 if self.val == X then true
 	 else
-	    'false'("The value of field \""#self.id#"\" must be \""#X#"\".")
+	    %% don't reveal the value of X here. might be security related!
+	    'false'("The value of field \""#self.id#"\" is not as expected.")
 	 end
       end
 	    

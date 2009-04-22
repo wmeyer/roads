@@ -384,7 +384,8 @@ define
 			   {PreprocessHtml
 			    {CallAfter PSession App Functr HtmlDoc}
 			    App Functr
-			    PSession ClosureSpace PathComponents}
+			    PSession ClosureSpace PathComponents
+			   Req.originalURI}
 			  }
 		       end
 		    catch E then exception({MakeStateless E}) end
@@ -408,7 +409,8 @@ define
 	      %% add application cookies
 	      {FoldR CookiesToSend
 	       fun {$ MyCookie Resp}
-		  {Cookie.setCookie Resp {PostProcessCookie {Routing.buildPath [PathComponents.app]} MyCookie}}
+		  {Cookie.setCookie Resp
+		   {PostProcessCookie {Routing.buildPath [PathComponents.app]} MyCookie}}
 	       end
 	       TheResponse}
 	   end
@@ -473,7 +475,8 @@ define
    
 	   %% Replace special elements in generated html.
 	   %% (might crash for ill-formed html)
-	   fun {PreprocessHtml HtmlDoc App Functr Sess CurrentSpace PathComponents}
+	   fun {PreprocessHtml HtmlDoc App Functr Sess
+		CurrentSpace PathComponents OriginalURI}
 	      Env = {NewCell unit}
 	      Valid = {NewCell unit}
 	   in
@@ -487,11 +490,11 @@ define
 		  else skip
 		  end
 	       end
-	       fun {$ Name Val}
+	       fun {$ Name Val Parent}
 		  case Name of action then
 		     action#{ProcessTargetAttribute App Functr
 			     Sess CurrentSpace PathComponents
-			     fun {$ F} {@Valid with({@Env with(F $)} $)} end
+			     fun {$ F} {@Env with({@Valid with(F $)} $)} end
 			     Val}
 		  [] href then
 		     href#{ProcessTargetAttribute App Functr
@@ -499,7 +502,7 @@ define
 			   fun {$ F} F end
 			   Val}
 		  [] bind then
-		     BindingName = {@Env newName($)}
+		     BindingName = {CondSelect Parent name {@Env newName($)}}
 		  in
 		     {@Env add(BindingName Val)}
 		     {@Valid setCurrentInputName(BindingName)}
@@ -511,8 +514,19 @@ define
 		     {@Valid setCurrentInputId(Val)}
 		     Name#Val
 		  [] validate then
-		     {@Valid addValidator(Val)}
-		     Html.removeAttribute#unit
+		     if {HasFeature Parent name} orelse {HasFeature Parent bind} then
+			{@Valid addValidator(Val)}
+			Html.removeAttribute#unit
+		     else
+			raise
+			   roads(
+			      validation(
+				 neitherBindNorNameSpecified(
+				    id:{CondSelect Parent id unknown}))
+			      roadsURL:{String.toAtom OriginalURI}
+			      )
+			end
+		     end
 		  else
 		     Name#Val
 		  end
