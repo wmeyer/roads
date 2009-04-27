@@ -204,32 +204,42 @@ define
       end
    end
 
-   fun {TimeStamp Seps}
-      T = {OS.localTime}
-      Milli = {Property.get 'time.total'} mod 1000
-      DateSep = if Seps then "-" else nil end
-      DateTimeSep = if Seps then " " else nil end
-      TimeSep = if Seps then ":" else nil end
-      MilliSep = if Seps then "." else nil end
-      fun {FormatInt I L}
-	 S = {Int.toString I}
-	 Prefix = {MakeList L-{Length S}}
-      in
-	 for P in Prefix do P = &0 end
-	 {Append Prefix S}
+   local
+      TimePort
+      thread
+	 for Seps#Res in {Port.new $ TimePort} do
+	    T = {OS.localTime}
+	    Milli = {Property.get 'time.total'} mod 1000
+	    DateSep = if Seps then "-" else nil end
+	    DateTimeSep = if Seps then " " else nil end
+	    TimeSep = if Seps then ":" else nil end
+	    MilliSep = if Seps then "." else nil end
+	    fun {FormatInt I L}
+	       S = {Int.toString I}
+	       Prefix = {MakeList L-{Length S}}
+	    in
+	       for P in Prefix do P = &0 end
+	       {Append Prefix S}
+	    end
+	 in
+	    Res =
+	    {VirtualString.toString
+	     (1900+T.year)#
+	     DateSep#{FormatInt 1+T.mon 2}#
+	     DateSep#{FormatInt T.mDay 2}#
+	     DateTimeSep#{FormatInt T.hour 2}#
+	     TimeSep#{FormatInt T.min 2}#
+	     TimeSep#{FormatInt T.sec 2}#
+	     MilliSep#{FormatInt Milli 3}
+	    }
+	 end
       end
    in
-      {VirtualString.toString
-       (1900+T.year)#
-       DateSep#{FormatInt 1+T.mon 2}#
-       DateSep#{FormatInt T.mDay 2}#
-       DateTimeSep#{FormatInt T.hour 2}#
-       TimeSep#{FormatInt T.min 2}#
-       TimeSep#{FormatInt T.sec 2}#
-       MilliSep#{FormatInt Milli 3}
-      }
+      fun {TimeStamp Seps}
+	 {Port.sendRecv TimePort Seps}
+      end
    end
-
+   
    %% Create a new logger.
    %% Log messages will be prefixed by the current time, the message log level and the module name.
    %% module: a string that will be included in every message (if decorate is true)

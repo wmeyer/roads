@@ -18,7 +18,7 @@ fun {CheckPassword User}
 		     Pwd = {CondSelect Passwords {String.toAtom User.escaped} {NewName}}
 		  in
 		     if X == Pwd then true
-		     else 'false'("Wrong password or user name")
+		     else 'false'("Wrong password or user name.")
 		     end			
 		  end)
 end

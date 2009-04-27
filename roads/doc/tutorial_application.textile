@@ -1,0 +1,37 @@
+h2. Application Development
+
+Up to now, we have only dealt with small examples which contained one or two functions. Real applications typically consist of a number of modules. We will show how to structure such applications.<br>
+Real applications also distinguish between a _model_ which contains the application data and business logic, and one or more _views_ which present the data to the user. The code in the <code>action</code> handlers, <code>bind</code> procedures and <code>validate</code> functions can be considered part of the _controller_: the glue code which handles user input and typically calls functions of the model layer. We will present two approaches how to do this with Roads.<br>
+For long running applications, it can be important to be able to update the code without any service interruption. This is very easy to implement with Roads.
+
+
+h3. Application Configuration
+
+As an example for this chapter, we introduce a simple poll application. This application has two types of users: admins and normal users. Both normal users and admin may vote on polls. But only admins can create and delete polls and designate new admins.
+
+h4. Installation
+
+If you did not clone the complete Git-repository in the first chapter, you need to download and unpack two packages to try out the example application:
+
+# "db-0.2.0.zip":http://github.com/wmeyer/roads/downloads/db-0.2.0.zip: a simple in-memory database system whhich is used by the example application
+# "pollapp-0.2.0.zip":http://github.com/wmeyer/roads/downloads/pollapp-0.2.0.zip: the application itself
+
+Build both packages with <code>./build.sh</code> in their respective directory.
+
+To start the application, feed <code>/pollapp/OPI.oz</code> in the Mozart OPI and go to "http://localhost:8080/poll":http://localhost:8080/poll.
+
+- introduce example poll app
+- download db and pollapp (if you did not clone the whole repo)
+
+- show and explain parts of PollApp.oz; explain app level configs and before, after
+- explain differenz OPI.oz and standalone.oz
+
+
+ h4. Interacting with a Model Layer and a Database
+<a name="ctp"></a>
+
+Working without spaces.
+
+ h4. Hot Code Swapping
+
+

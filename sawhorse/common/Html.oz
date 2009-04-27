@@ -2,6 +2,7 @@ functor
 import
    Util(concatVS:ConcatVS)
    Css(toString:RenderCss)
+   Javascript(convert:RenderJavascript) at 'x-ozlib://wmeyer/javascript/Javascript.ozf'
 export
    Render
    RenderWith
@@ -21,6 +22,22 @@ define
    DefaultDocType =
    "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">"
 
+   EmptyTags =
+   [
+    basefont 
+    br 
+    area 
+    link 
+    img 
+    param 
+    hr 
+    input 
+    isindex 
+    base 
+    meta 
+    frame
+   ]
+   
    fun {RenderElement H}
       case H of '#'(...) then H % a virtual string
       [] '|'(...) then H % a string
@@ -28,6 +45,7 @@ define
       [] unit(...) then {ConcatVSMap {Record.toList H} RenderElement}
       [] noHtml then nil
       [] css(...) then {RenderCss H}
+      [] javascript(...) then {RenderJavascript {Record.toList H}}
       else
 	 Name = {AtomToString {Label H}}
 	 AttribPart = {Record.filterInd H fun {$ F _} {IsAtom F} end}
@@ -36,12 +54,15 @@ define
 	 Attrs = {ConcatVSMap {Record.toListInd AttribPart} RenderAttribute}
 	 AttrStr = case Attrs of nil then nil else " "#Attrs end
       in
-	 "<"#Name#AttrStr#">"
-	 #if Content == nil then nil
-	  else
-	     Content
-	     #"</"#Name#">"
-	  end
+	 if {Member {Label H} EmptyTags} then
+	    if Content \= nil then
+	       raise html(tagShouldBeEmpty(tag:Name contents:Content)) end
+	    end
+	    "<"#Name#AttrStr#">"
+	 else
+	    "<"#Name#AttrStr#">"#Content
+	    #"</"#Name#">"
+	 end
       end
    end
 

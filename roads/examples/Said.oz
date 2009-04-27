@@ -15,7 +15,8 @@ define
 	   action:fun {$ S}
 		     p(a("click here"
 			 href:fun {$ S}
-				 p("you said: "#Foo)
+				 p("you said: "#Foo
+				  )
 			      end
 			))
 		  end

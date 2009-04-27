@@ -50,6 +50,21 @@ define
 	 end
       end
 
+      meth int_in(Min Max result:R)
+	 R =
+	 try
+	    V = {String.toInt self.val}
+	 in
+	    if V >= Min andthen V =< Max then true
+	    else
+	       'false'("The value of field \""#self.id#"\" must be between "#
+		       Min#" and "#Max#".")
+	    end
+	 catch _ then
+	    'false'("The value of field \""#self.id#"\" must be an integer value.")
+	 end
+      end
+      
       meth is_float(result:R)
 	 IsFloat = try {String.toFloat self.val _} true catch _ then false end
       in

@@ -244,7 +244,7 @@ define
       TimeAllowed = 1000 * Config.TimeOutType
       Request =
       try
-	 case {WithTimeout TimeAllowed fun {$} {GetFullRequest Config ClientSocket} end}
+	 case {WithTimeout TimeAllowed fun {$} {GetFullRequest Config ClientSocket } end}
 	 of timeout then
 	    {Config.trace timeoutWaitingForRequest}
 	    if Type == firstRun then
@@ -273,7 +273,7 @@ define
 	 %% log ?
 	 {SendResponse ClientSocket {RespCreator Config}}
       [] ok(Req) then
-	 Response = {HandleRequest Config Req}
+	 Response = {HandleRequest Config {AdjoinAt Req remoteHost HostAddress}}
       in
 	 {SendResponse ClientSocket Response}
 	 local

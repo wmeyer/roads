@@ -24,6 +24,7 @@ export
    EndsWith
    CompareCaseInsensitive
    NubBy
+   Nub
    RemoveTrailingSlash
    TupleAdd
 define
@@ -148,6 +149,10 @@ define
       case Xs of nil then nil
       [] X|Xr then X|{NubBy EQ {Filter Xr fun {$ Y} {Not {EQ X Y}} end}}
       end
+   end
+
+   fun {Nub Xs}
+      {NubBy Value.'==' Xs}
    end
    
    fun {RemoveTrailingSlash Xs}

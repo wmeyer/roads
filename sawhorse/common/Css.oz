@@ -12,7 +12,7 @@ define
       Properties = {Record.toListInd {Record.subtract CSS 1}}
    in
       {VirtualString.toString
-       {Intercalate {Map Selectors SelectorToString} ", "}#"\n{\n "#
+       {Intercalate {Map Selectors SelToString} ", "}#"\n{\n "#
        {Intercalate {Map Properties PropertyToString} ";\n "}#
        "\n}\n"
       }
@@ -22,6 +22,12 @@ define
       {VirtualString.toString F#":"#V}
    end
 
+   fun {SelToString Sel}
+      case Sel of Tag#Id then {VirtualString.toString Tag#"#"#Id}
+      else {SelectorToString Sel}
+      end
+   end
+   
    fun {SelectorToString Sel}
       fun {RelatedTag Feature Sep}
 	 case {CondSelect Sel Feature Nothing} of !Nothing then ""

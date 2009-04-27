@@ -30,8 +30,7 @@ define
 		formatTime:FormatTime
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 	   Base62(is 'from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
-	   Validation('class') at 'x-ozlib://wmeyer/roads/Validation.ozf'
-	   Environment('class') at 'x-ozlib://wmeyer/roads/Environment.ozf'
+	   FormValidator('class') at 'x-ozlib://wmeyer/roads/FormValidator.ozf'
 	export
 	   %% Plugin interface
 	   name:RoadsName
@@ -316,13 +315,22 @@ define
 	      }
 	   end
 
-	   %% TODO
-	   fun {MakeStateless E}
-	      if {Procedure.is E} then procedure(arity:{Procedure.arity E})
-	      elseif {Cell.is E} then cell({MakeStateless @E})
-	      elseif {Atom.is E} orelse {Name.is E} orelse {Number.is E} then E
-	      elseif {Record.is E} then {Record.map E MakeStateless}
-	      else unknownEntity
+	   %% so that we can send an exception from a subordinate space
+	   fun {MakeStateless E Visited}
+	      if {IsFree E} then freeVar
+	      else
+		 if {Member E Visited} then cycleDetected
+		 else
+		    Visited2 = E|Visited
+		 in
+		    if {Procedure.is E} then procedure(arity:{Procedure.arity E})
+		    elseif {Cell.is E} then cell({MakeStateless @E Visited2})
+		    elseif {Atom.is E} orelse {Name.is E} orelse {Number.is E} then E
+		    elseif {Record.is E} then
+		       {Record.map E fun {$ X} {MakeStateless X Visited2} end}
+		    else unknownEntity
+		    end
+		 end
 	      end
 	   end
 	   
@@ -346,52 +354,64 @@ define
 	      CookiesToSend
 	      TheResponse
 	   in
+	      {Config.trace "Roads::ExecuteGetRequest"}
 	      {Context.forAll CSession closureCalled(ClosureId)}
-	      Res#SessionIdChanged#CookiesToSend
-	      = {Speculative.evalInSpace ClosureSpace
-		 fun {$}
-		    %% Session must be prepared in the space to make the private dict local
-		    PSession = {Session.'prepare' State CSession Req Inputs}
-		    RealFun = {NewCell {CallBefore PSession App Functr Function}}
-		    FunResult
-		    NoResult = {NewName}
-		 in
-		    try
-		       %% TODO: clean this up if possible (but make sure the catch-all is outside of the return statement)
-		       FunResult =
-		       for return:R do %% repeat until validation either succeeds or
-			  %% fails with a non-procedure result
-			  Result
-		       in
-			  try
-			     Result = {@RealFun PSession.interface}
-			  catch validationFailed(X) then
-			     if {Procedure.is X} then
-				RealFun := X %% -> try again in next iteration
-				Result = NoResult
-			     else
-				Result = X %% return error message
-			     end
-			  [] E then
-			     raise {AdjoinAt E roadsURL {String.toAtom Req.originalURI}} end
-			  end
-			  if Result \= NoResult then {R Result} end
-		       end
-		       case FunResult of redirect(...) then FunResult
-		       [] response(...) then FunResult
-		       [] HtmlDoc then
-			  {Html.render
-			   {PreprocessHtml
-			    {CallAfter PSession App Functr HtmlDoc}
-			    App Functr
-			    PSession ClosureSpace PathComponents
-			   Req.originalURI}
-			  }
-		       end
-		    catch E then exception({MakeStateless E}) end
-		    #@(PSession.idChanged)#@(PSession.cookiesToSend)
-		 end
-		}
+	      {Config.trace "Roads::ExecuteGetRequest2"}
+	      Res#
+	      SessionIdChanged#
+	      CookiesToSend
+	      =
+	      {Speculative.evalInSpace ClosureSpace
+	       fun {$}
+		  {Config.trace "Roads::ExecuteGetRequest2b"}
+		  %% Session must be prepared in the space
+		  %% to make the private dict local
+		  PSession = {Session.'prepare' State CSession Req Inputs}
+		  RealFun = {NewCell {CallBefore PSession App Functr Function}}
+		  FunResult
+	       in
+		  {Config.trace "Roads::ExecuteGetRequest2c"}
+		  try
+		     FunResult =
+ 		     %% Execute application function;
+		     %% repeat until validation either succeeds or
+		     %% fails with a non-procedure result
+		     for return:R do
+			try
+			   {R {@RealFun PSession.interface}}
+			catch validationFailed(X) andthen {Procedure.is X} then
+			   RealFun := X
+			[] validationFailed(X) then {R X} %% return error message
+			end
+		     end
+		     %% If result is a html doc, preprocess and render it;
+		     %% otherwise pass through
+		     {Config.trace "Roads::ExecuteGetRequest2d"}
+		     case FunResult of redirect(...) then FunResult
+		     [] response(...) then FunResult
+		     [] HtmlDoc then
+			{Html.render
+			 {PreprocessHtml Config
+			  {CallAfter PSession App Functr HtmlDoc}
+			  App Functr
+			  PSession ClosureSpace PathComponents
+			 }
+			}
+		     end
+		  catch E then
+		     exception(
+			{MakeStateless
+			 {AdjoinAt E roadsURL {String.toAtom Req.originalURI}}
+			 nil
+			})
+		  end
+		  #
+		  @(PSession.idChanged)#
+		  @(PSession.cookiesToSend)
+	       end
+	      }
+	      {Config.trace "Roads::ExecuteGetRequest3"}
+	      %% create response object (or propagate exception)
 	      TheResponse = 
 	      case Res of exception(E) then raise E end
 	      [] response(...) then Res
@@ -406,6 +426,7 @@ define
 		   {ExpiresHeader {OsTime.gmtime {OS.time}+App.pagesExpireAfter}}]
 		  withBody}
 	      end
+	      {Config.trace "Roads::ExecuteGetRequest4"}
 	      %% add application cookies
 	      {FoldR CookiesToSend
 	       fun {$ MyCookie Resp}
@@ -475,63 +496,54 @@ define
    
 	   %% Replace special elements in generated html.
 	   %% (might crash for ill-formed html)
-	   fun {PreprocessHtml HtmlDoc App Functr Sess
-		CurrentSpace PathComponents OriginalURI}
-	      Env = {NewCell unit}
-	      Valid = {NewCell unit}
+	   fun {PreprocessHtml Config HtmlDoc App Functr Sess
+		CurrentSpace PathComponents}
+	      Validator = {NewCell unit}
+	      fun {CallValidator Type Tag}
+		 GenName
+	      in
+		 {@Validator Type(Tag ?GenName)}
+		 case GenName of nothing then Html.removeAttribute#unit
+		 [] just(N) then name#N
+		 end
+	      end
+	      Res
 	   in
+	      Res =
 	      {Html.mapAttributes {AddSecrets HtmlDoc}
+	       %% a new FormValidator for every form tag
 	       proc {$ Tag OpenClose}
 		  case Tag of form andthen OpenClose == open then
-		     Env := {New Environment.'class' init}
-		     Valid := {New Validation.'class' init}
-		  [] input andthen OpenClose == open then {@Valid startInputTag}
-		  [] input andthen OpenClose == close then {@Valid endInputTag}
+		     Validator := {New FormValidator.'class' init}
+		  [] form andthen OpenClose == close then
+		     Validator := unit
 		  else skip
 		  end
 	       end
 	       fun {$ Name Val Parent}
-		  case Name of action then
+		  case Name of action andthen {Label Parent} == form then
 		     action#{ProcessTargetAttribute App Functr
 			     Sess CurrentSpace PathComponents
-			     fun {$ F} {@Env with({@Valid with(F $)} $)} end
+			     fun {$ F} {@Validator with(F $)} end
 			     Val}
 		  [] href then
 		     href#{ProcessTargetAttribute App Functr
 			   Sess CurrentSpace PathComponents
 			   fun {$ F} F end
 			   Val}
-		  [] bind then
-		     BindingName = {CondSelect Parent name {@Env newName($)}}
-		  in
-		     {@Env add(BindingName Val)}
-		     {@Valid setCurrentInputName(BindingName)}
-		     name#BindingName
-		  [] name then
-		     {@Valid setCurrentInputName(Val)}
-		     Name#Val
-		  [] id then
-		     {@Valid setCurrentInputId(Val)}
-		     Name#Val
-		  [] validate then
-		     if {HasFeature Parent name} orelse {HasFeature Parent bind} then
-			{@Valid addValidator(Val)}
-			Html.removeAttribute#unit
-		     else
-			raise
-			   roads(
-			      validation(
-				 neitherBindNorNameSpecified(
-				    id:{CondSelect Parent id unknown}))
-			      roadsURL:{String.toAtom OriginalURI}
-			      )
-			end
-		     end
+		  [] bind andthen {Label Parent} == input then
+		     {CallValidator bind Parent}
+		  [] bind then raise roads(bindAttributeOutsideOfInput) end
+		  [] validate andthen {Label Parent} == input then
+		     {CallValidator validate Parent}
+		  [] validate then raise roads(validateAttributeOutsideOfInput) end
 		  else
 		     Name#Val
 		  end
 	       end
 	      }
+	      {Config.trace "PreprocessHtml, end"}
+	      Res
 	   end
 
 	   fun {ProcessTargetAttribute App Functr
