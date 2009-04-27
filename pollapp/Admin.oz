@@ -22,33 +22,29 @@ define
 		  input(type:text id:"Question" bind:Question
 			validate:length_in(1 1000))}
 		 input(type:submit value:"Submit question")
-		 action:fun {$ S}
-			   {S.set question Question.escaped}
-			   {EnterOptions S}
+		 action:fun {$ _}
+			   {EnterOptions Question.escaped nil}
 			end
 		 method:post
 		)
 	   )
    end
 
-   fun {EnterOptions Session}
-      Question = {Session.get question}
-      Answers = {Session.condGet answers nil}
+   fun {EnterOptions Question Answers}
       NewAnswer
    in
       'div'(
 	 h1("Create a poll: Options")
 	 "Question: "#Question br
-	 {ShowAnswers Answers} br
+	 {ShowAnswers Question Answers} br
 	 form(
 	    {Labelled "Enter a new option: "
 	     input(type:text bind:NewAnswer id:"Option"
 		   validate:length_in(1 1000))}
 	    input(type:submit name:"submit" value:"Submit option") br
 	    method:post
-	    action:fun {$ S}
-		      {S.set answers {Append Answers [NewAnswer.escaped]}}
-		      {EnterOptions S}
+	    action:fun {$ _}
+		      {EnterOptions Question {Append Answers [NewAnswer.escaped]}}
 		   end
 	    a("Done"
 	      href:fun {$ S}
@@ -66,15 +62,14 @@ define
 	 )
    end
 
-   fun {ShowAnswers Answers}
+   fun {ShowAnswers Question Answers}
       {UL
        {List.mapInd Answers
 	fun {$ I A}
 	   'div'("Option: \"" b(A) "\"  "
 		 a("(Remove this option)"
-		   href:fun {$ S}
-			   {S.set answers {RemoveNth Answers I}}
-			   {EnterOptions S}
+		   href:fun {$ _}
+			   {EnterOptions Question {RemoveNth Answers I}}
 			end
 		  )
 		)
