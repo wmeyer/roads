@@ -25,7 +25,7 @@ define
    fun {EnterInt F OV Next}
       fun {$ Session} V in
 	 form(input(type:text
-		    validate:is_int
+		    validate:int
 		    bind:V value:{IntToString OV})
 	      input(type:submit)
 	      method:post

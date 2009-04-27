@@ -57,8 +57,8 @@ end
 Some validation requirements are very common. Instead of a validation function, you may specify one of the following values for the <code>validate</code> attribute:
 * <code>length_in(MinLen MaxLen)</code> to constraint the string length to an interval.
 * <code>length_is(Len)</code> to insist on an exact length.
-* <code>is_int</code> to expect an integer as accepted by "<code>StringToInt</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
-* <code>is_float</code> for floating point numbers as accepted by "<code>StringToFloat</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
+* <code>int</code> to expect an integer as accepted by "<code>StringToInt</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
+* <code>float</code> for floating point numbers as accepted by "<code>StringToFloat</code>":http://www.mozart-oz.org/home/doc/base/string.html#section.text.strings.
 * <code>is(Val</code> to insist on one specific value.
 * <code>one_of(Val1 Val2 ... ValN)</code> to accept one of multiple constant values.
 * <code>not_one_of(Val1 Val2 ... ValN)</code> to accept all but a number of constant values.

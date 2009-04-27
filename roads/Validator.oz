@@ -40,7 +40,7 @@ define
 	 end
       end
 
-      meth is_int(result:R)
+      meth int(result:R)
 	 IsInt = try {String.toInt self.val _} true catch _ then false end
       in
 	 R =
@@ -65,7 +65,7 @@ define
 	 end
       end
       
-      meth is_float(result:R)
+      meth float(result:R)
 	 IsFloat = try {String.toFloat self.val _} true catch _ then false end
       in
 	 R =
