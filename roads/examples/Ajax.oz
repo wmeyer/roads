@@ -57,12 +57,12 @@ define
    end
 
    fun {Info S}
-      "Existed from "#
+      "existed from "#
       case {S.getParam type}.original
-      of "sapiens" then "-200.000 to now"
-      [] "neanderthal" then "-400.000 to -28.000"
-      [] "heidelberg" then "-600.000 to -200.000"
-      [] "erectus" then "-1.800.000 to -40.000"
+      of "sapiens" then "200,000 years ago to now"
+      [] "neanderthal" then "400,000 years ago to 28,000 years ago"
+      [] "heidelberg" then "600,000 years ago to 200,000 years ago"
+      [] "erectus" then "1,800,000 years ago to 40,000 years ago"
       else "unknown"
       end
    end

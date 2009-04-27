@@ -9,7 +9,6 @@ h3. Contents
 # [[The Session Object]]
 # [[Security]]
 # [[Application Development]]
-# [[User Authentication]]
 # [[Other Features]]
 
 h3. Getting Started
@@ -152,11 +151,6 @@ h3. Application Development
 
  h4. Interacting with a Model Layer and a Database
 <a name="ctp"></a>
-
-
-h3. User Authentication
-
-Example implementation.
 
 
 h3. Other Features

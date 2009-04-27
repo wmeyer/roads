@@ -2,7 +2,8 @@ functor
 import
    DBServer at 'x-ozlib://wmeyer/db/Server.ozf'
    Model
-   System
+   JavaScriptCode
+   Support(toTag:ToTag)
 export
    Functors
    PagesExpireAfter
@@ -45,27 +46,27 @@ define
    end
 
    proc {ShutDown Session}
-      {System.showInfo "shutting down PollApp."}
       {DBServer.shutDown Session.db}
    end
 
+   %% Authentication
    fun {Before Session Fun}
-      IsLoginPage = {Session.condGet loginInProgress false}
-      User = {Session.condGetShared user none}
+      IsLoggedIn = {Session.memberShared user}
+      LoggingIn = {Session.condGet loginInProgress false}
    in
-      if IsLoginPage then Fun
-      elseif User == none then fun {$ Session} {Login Session Fun} end
-      else Fun
+      if IsLoggedIn orelse LoggingIn then Fun
+      else %% let user log in and then show original page
+	 fun {$ Session} {Login Session Fun} end
       end
    end
    
+   %% Add list of links for logged-in users
    fun {After Session Doc}
-      User = {Session.condGetShared user none}
+      IsLoggedIn = {Session.memberShared user}
    in
-      if User == none then
+      if {Not IsLoggedIn} then
 	 html(
-	    body(onLoad:"if(window.document.forms[0]&&window.document.forms[0].elements[0])"
-		 #" window.document.forms[0].elements[0].focus();"
+	    body(onLoad:JavaScriptCode.activateFirstForm
 		 Doc))
       else
 	 html(
@@ -75,6 +76,7 @@ define
 		       css(a(':visited') 'text-decoration':none)
 		       css(a(':active') 'text-decoration':none)
 		       css(a(':hover') 'text-decoration':underline)
+		       css(a(linkbar) margin:"5px" 'background-color':"#f2f2f2")
 		      )
 		)
 	    body(
@@ -82,11 +84,12 @@ define
 		     hr
 		     Doc
 		     hr
-		     a(href:url('functor':admin function:'') "Admin")
-		     "&nbsp;"
-		     a(href:url('functor':'' function:showAll) "View all polls")
-		     "&nbsp;"
-		     a(href:Logout "Logout "#User.login)
+		     'div'(a("Admin" href:url('functor':admin function:'') 'class':linkbar)
+			   a("View all polls"
+			     href:url('functor':'' function:showAll) 'class':linkbar)
+			   a("Logout "#{Session.getShared user}.login
+			     href:Logout 'class':linkbar)
+			  )
 		    )
 	       )
 	    )
@@ -95,59 +98,99 @@ define
 
    fun {Logout Session}
       {Session.removeShared user}
-      "Good bye!"
+      redirect(303 url('functor':'' function:''))
    end
-
-   fun {Login Session Fun}
+   
+   fun {Login Session Cont}
       {Session.set loginInProgress true}
-      'div'(h2("Login existing user")
-	    {LoginForm Fun loginUser "Could not login." false}
-	    h2("New user")
-	    {LoginForm Fun createUser "Could not create user" true}
+      'div'({LoginExistingUser Cont}
+	    {LoginNewUser Cont}
 	   )
    end
 
-   fun {LoginForm Fun Method FailureText DoublePassword}
-      L Password1 Password2
+   fun {LoginExistingUser Cont}
+      UserName Password
    in
-      form(table(
-	      tr(td(label('for':"Login" "Login: "))
-		 td(input(type:text id:"Login" bind:L
-			  validate:length_in(4 12))))
-	      tr(td(label('for':"Password" "Password: "))
-		 td(input(type:password id:"Password" bind:Password1
-			  validate:length_in(5 12))))
-	   if DoublePassword then
-	      tr(
-		 td(label('for':"passwordAgain" "Repeat password: "))
-		 td(input(type:password id:"passwordAgain" bind:Password2))
-		 )
-	   else tr("")
-	   end)
-	   input(type:submit value:"Login")
-	   action:fun {$ Session}
-		     if {Not DoublePassword}
-			orelse Password1.original == Password2.original then
-			case {Session.model Method(L.escaped Password1.original result:$)}
-			of just(User) then
-			   {Session.set loginInProgress false}
-			   {Session.setShared user User}
-			   {Fun Session}
-			[] nothing then
-			   html(body(p(FailureText) br
-				     a("Try again" href:fun {$ S} {Login S Fun} end)
-				    ))
-			end
-		     else
-			html(
-			   body(
-			      p("Passwords do not match.") br
-			      a(href:fun {$ S} {Login S Fun} end "Try again")
-			      )
-			   )
-		     end
-		  end
-	   method:post
-	  )
+      {LoginForm "Login existing user"
+       [ {EnterUserName ?UserName}
+	 {EnterPassword "Password: " password ?Password}
+       ]
+       fun {$ Session}
+	  case {Session.model loginUser(UserName.escaped
+					Password.original
+					result:$)}
+	  of just(User) then {LoginSuccess Session User Cont}
+	  [] nothing then {LoginError "Could not login." Cont}
+	  end
+       end
+      }
+   end
+
+   fun {LoginNewUser Cont}
+      UserName Password1 Password2
+   in
+      {LoginForm "New user"
+       [ {EnterUserName ?UserName}
+	 {EnterPassword "Password:" password ?Password1}
+	 {EnterPassword "Repeat password:" repeat ?Password2}
+       ]
+       fun {$ Session}
+	  if Password1.original == Password2.original then
+	     case {Session.model createUser(UserName.escaped
+					    Password1.original
+					    result:$)}
+	     of just(User) then {LoginSuccess Session User Cont}
+	     [] nothing then {LoginError "Could not create user." Cont}
+	     end
+	  else {LoginError "Passwords do not match." Cont}
+	  end
+       end
+      }
+   end
+
+   fun {LoginForm Title Rows Action}
+      'div'(
+	 h2(Title)
+	 form({Table Rows}
+	      input(type:submit value:"Login")
+	      method:post
+	      action:Action
+	     )
+	 )
+   end
+
+   fun {Table Rows}
+      {ToTag table {Map Rows ToRow}}
+   end
+
+   %% [X Y] -> tr(td(X) td(Y))
+   fun {ToRow Cols}
+      {ToTag tr {Map Cols fun {$ C} td(C) end}}
+   end
+   
+   fun {LoginSuccess Session User Cont}
+      {Session.set loginInProgress false}
+      {Session.setShared user User}
+      {Cont Session}
+   end
+
+   fun {LoginError Text Cont}
+      html(body(p(Text)
+		a("Try again" href:fun {$ S} {Login S Cont} end)
+	       ))
+   end
+
+   fun {EnterUserName ?UserName}
+      [label('for':"Login" "Login ")
+       input(type:text id:"Login" bind:UserName
+	     validate:length_in(4 12))
+      ]
+   end
+
+   fun {EnterPassword Label Id ?Password}
+      [label('for':Id Label)
+       input(type:text id:Id bind:Password
+	     validate:length_in(5 12))
+      ]
    end
 end

@@ -29,6 +29,7 @@ define
 		tupleAdd:TupleAdd
 		formatTime:FormatTime
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
+	   Query at 'x-ozlib://wmeyer/sawhorse/server/Query.ozf'
 	   Base62(is 'from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
 	   FormValidator('class') at 'x-ozlib://wmeyer/roads/FormValidator.ozf'
 	export
@@ -163,7 +164,8 @@ define
 			    {Config.trace newSession}
 			    IsNewSession = true
 			    {State.sessions condGet(SessionId
-						    {Session.new MyState Path SessionId})}
+						    {Session.new MyState Config Path
+						     SessionId})}
 			 end
 	      {Config.trace "Roads::HandleRequest, got session"}
 	      %% find out which function to call (if no closure is given)
@@ -471,13 +473,30 @@ define
 		 AppPath = {CondSelect Url app PathComponents.app}
 		 FunctorPath = {CondSelect Url 'functor' PathComponents.'functor'}
 		 FunPath = {CondSelect Url function PathComponents.function}
-		 Extra = {VirtualString.toString {CondSelect Url extra nil}}
+		 Params = {CondSelect Url params unit}
+		 Extra = {VirtualString.toString
+			  {CondSelect Url extra {ParamsToQuery Params}}
+			 }
 	      in
 		 {Append {Routing.buildPath [AppPath FunctorPath FunPath]} Extra}
 	      else Url
 	      end
 	   end
 
+	   fun {URLEncode X}
+	      {Query.percentEncode {VirtualString.toString X}}
+	   end
+	   
+	   fun {ParamsToQuery Params}
+	      case Params of unit then nil
+	      else "?"#
+		 {List.toTuple '#'
+		  {Map {Record.toListInd Params}
+		   fun {$ P#V} {URLEncode P}#"="#{URLEncode V} end
+		  }}
+	      end
+	   end
+	   
 	   %% Add a secret token to every form to prevent CSRF attacks.
 	   %% (Do not add it to form that use a url as the action handler, because
 	   %%  those form use a bookmarkable handler without secret checking.)

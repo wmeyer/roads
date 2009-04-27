@@ -4,6 +4,8 @@
 functor
 export
    Parse
+   PercentDecode
+   PercentEncode
 define
    fun {Parse Xs}
       case Xs of unit then unit
@@ -46,6 +48,29 @@ define
       if X >= &0 andthen X =< &9 then X-&0
       elseif X >= &a andthen X =< &F then 10 + X-&a
       elseif X >= &A andthen X =< &F then 10 + X-&A
+      end
+   end
+   
+   fun {PercentEncode Xs}
+      case Xs of nil then nil
+      [] X|Xr then
+	 if {Char.isDigit X} orelse {Member X [&- &_ &.	&~]}
+	    orelse X >= &a andthen X =< &z
+	    orelse X >= &z andthen X =< &Z then
+	    X|{PercentEncode Xr}
+	 else
+	    {Append &%|{ToHex2 X} {PercentEncode Xr}}
+	 end
+      end
+   end
+
+   fun {ToHex2 X}
+      [{ToHex1 X div 16} {ToHex1 X mod 16}]
+   end
+
+   fun {ToHex1 X}
+      if X >= 0 andthen X =< 9 then &0 + X
+      elseif X >= 10 andthen X =< 15 then &A + X - 10
       end
    end
 end

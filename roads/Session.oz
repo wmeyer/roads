@@ -183,6 +183,9 @@ define
 			   else raise unknownCookie(key:Key) end end
 			end
 	   setCookie:SetCookie
+	   %% logging
+	   logTrace:S.serverConfig.trace
+	   logError:S.serverConfig.logError
 	   )
        }
       }
@@ -205,7 +208,7 @@ define
       {Cache.create {CondSelect Config sessionDuration 60*60*1000} Destroy}
    end
    
-   fun {NewSession State Path Id}
+   fun {NewSession State ServerConfig Path Id}
       just(App) = {Routing.getApplication State Path}
       Closures = {ClosureDict.new}
       IdCell = {NewCell Id}
@@ -233,6 +236,7 @@ define
 			  {Port.send IdPort Id}
 		       end
 		    end
+	      serverConfig:ServerConfig
 	     )
    end
 

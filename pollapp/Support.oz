@@ -1,20 +1,25 @@
 functor
 export
-   DivList
-   DivMap
-   DivMapInd
+   ToTag
+   Ul
+   Labelled
 define
-   fun {DivList Xs}
-      {List.toTuple 'div' Xs}
+   fun {ToTag T Xs}
+      {List.toTuple T Xs}
    end
-   fun {DivMap Xs F}
-      {DivList
+   
+   fun {ToTagMap T Xs F}
+      {ToTag T 
        {Map Xs F}
       }
    end
-   fun {DivMapInd Xs F}
-      {DivList
-       {List.mapInd Xs F}
-      }
+   
+   fun {Ul Xs}
+      {ToTagMap ul Xs fun {$ X} li(X) end}
+   end
+
+   fun {Labelled Label Tag}
+      'div'(label('for':Tag.id Label)
+	    Tag)
    end
 end

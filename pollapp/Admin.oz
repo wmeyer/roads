@@ -1,25 +1,26 @@
 functor
 import
-   Support(divMap:DivMap divMapInd:DivMapInd)
+   Support(ul:UL labelled:Labelled)
+   JavaScriptCode
 export
-   '':Admin
+   '':Menu
    Create
    Delete
    MakeAdmin
    Before
    After
 define
-   fun {Admin Session}
-      h1("Administration")
+   fun {Menu Session}
+      h1("Administration") %% see After
    end
 
    fun {Create Session}
       Question
    in
       'div'(h1("Create a poll: Question")
-	    form(label('for':"Question" "Enter the question: ")
-		 input(type:text id:"Question" bind:Question
-		       validate:length_in(1 1000))
+	    form({Labelled "Enter the question: "
+		  input(type:text id:"Question" bind:Question
+			validate:length_in(1 1000))}
 		 input(type:submit value:"Submit question")
 		 action:fun {$ S}
 			   {S.set question Question.escaped}
@@ -40,40 +41,45 @@ define
 	 "Question: "#Question br
 	 {ShowAnswers Answers} br
 	 form(
-	    label('for':"Option" "Enter a new option: ")
-	    input(type:text value:"" bind:NewAnswer id:"Option"
-		  validate:length_in(1 1000))
+	    {Labelled "Enter a new option: "
+	     input(type:text bind:NewAnswer id:"Option"
+		   validate:length_in(1 1000))}
 	    input(type:submit name:"submit" value:"Submit option") br
 	    method:post
 	    action:fun {$ S}
 		      {S.set answers {Append Answers [NewAnswer.escaped]}}
 		      {EnterOptions S}
 		   end
-	    a("Done" href:fun {$ S}
-			     NewPollId = {S.model createPoll(Question Answers result:$)}
-			  in
-			     'div'("Poll added. " br
-				   a(href:url('functor':'' function:show
-					      extra:"?pollid="#NewPollId)
-				     "View new poll")
-				  )
-			  end
+	    a("Done"
+	      href:fun {$ S}
+		      NewPollId = {S.model createPoll(Question Answers result:$)}
+		   in
+		      'div'("Poll added. " br
+			    a("View new poll"
+			      href:url('functor':'' function:show
+				       params:unit(pollid:NewPollId))
+			      )
+			   )
+		   end
 	     )
 	    )
 	 )
    end
 
    fun {ShowAnswers Answers}
-      {DivMapInd Answers
-       fun {$ I A}
-	  'div'("Option: \"" b(A) "\"  "
-		a("(Remove this option)" href:fun {$ S}
-						 {S.set answers {RemoveNth Answers I}}
-						 {EnterOptions S}
-					      end
-		 )
-	       )
-       end
+      {UL
+       {List.mapInd Answers
+	fun {$ I A}
+	   'div'("Option: \"" b(A) "\"  "
+		 a("(Remove this option)"
+		   href:fun {$ S}
+			   {S.set answers {RemoveNth Answers I}}
+			   {EnterOptions S}
+			end
+		  )
+		)
+	end
+       }
       }
    end
    
@@ -83,38 +89,42 @@ define
 
    fun {Delete Session}
       'div'(h1("Delete polls")
-	    {DivMap {Session.model allPolls(result:$)}
-	     fun {$ Poll}
-		'div'(a("Delete \""#Poll.question#"\""
-			href:fun {$ S}
-				'div'("Really? "
-				      a("Yes"
-					href:fun {$ S}
-						{Session.model deletePoll(Poll.id)}
-						{Delete Session}
-					     end
-				       )
-				      " "
-				      a("No" href:Delete)
-				     )
-			     end
-		       ))
-	     end
-	    }
-	   )
+	    {UL
+	     {Map {Session.model allPolls(result:$)}
+	      fun {$ Poll}
+		 a("Delete \""#Poll.question#"\""
+		   href:fun {$ S}
+			   'div'("Really? "
+				 a("Yes"
+				   href:fun {$ S}
+					   {Session.model deletePoll(Poll.id)}
+					   {Delete Session}
+					end
+				  )
+				 " "
+				 a("No" href:Delete)
+				)
+			end
+		  )
+	      end
+	     }
+	    }	    
+	   )	   
    end
 
    fun {MakeAdmin S}
       'div'(h1("Designate Admin")
-	    {DivMap {S.model allNonAdmins(result:$)}
-	     fun {$ user(login:L)}
-		'div'(a("User: "#L
-			href:fun {$ S}
-				{S.model makeAdmin(L)}
-				{MakeAdmin S}
-			     end
-		       ))
-	     end
+	    {UL
+	     {Map {S.model allNonAdmins(result:$)}
+	      fun {$ user(login:L)}
+		 a("User: "#L
+		   href:fun {$ S}
+			   {S.model makeAdmin(L)}
+			   {MakeAdmin S}
+			end
+		  )
+	      end
+	     }
 	    }
 	   )
    end
@@ -134,21 +144,28 @@ define
    fun {After S Doc}
       if {IsAdmin S} then
 	 html(
-	    head(title("Administrate polls"))
-	    body(onLoad:"if(window.document.forms[0]&&window.document.forms[0].elements[0])"
-		 #" window.document.forms[0].elements[0].focus();"
+	    head(title("Administrate polls")
+		 style(type:"text/css"
+		       css(a(':link') 'text-decoration':none)
+		       css(a(':visited') 'text-decoration':none)
+		       css(a(':active') 'text-decoration':none)
+		       css(a(':hover') 'text-decoration':underline)
+		       css(a(linkbar) margin:"5px" 'background-color':"#fff2f2")
+		      ))
+	    body(onLoad:JavaScriptCode.activateFirstForm
 		 'div'(
 		    h3("Administrate polls")
 		    hr
 		    Doc
 		    hr
-		    a(href:url('functor':admin function:create) "Create a poll")
-		    "&nbsp;"
-		    a(href:url('functor':admin function:delete) "Delete a poll")
-		    "&nbsp;"
-		    a(href:url('functor':admin function:makeAdmin) "Designate an admin")
-		    "&nbsp;"
-		    a(href:url('functor':'' function:showAll) "View all polls")
+		    a("Create a poll"
+		      href:url('functor':admin function:create) 'class':linkbar)
+		    a("Delete a poll"
+		      href:url('functor':admin function:delete) 'class':linkbar)
+		    a("Designate an admin"
+		      href:url('functor':admin function:makeAdmin) 'class':linkbar)
+		    a("Leave admin area"
+		      href:url('functor':'' function:showAll) 'class':linkbar)
 		    )
 		)
 	    )
