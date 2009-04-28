@@ -11,6 +11,7 @@ export
    Run
    IsRunning
    ShutDown
+   ColdRestart
 define
    Instance = {ProcessSingleton.run 'x-ozlib://wmeyer/roads/Roads.ozf'}
    Reset = Instance.reset
@@ -22,4 +23,5 @@ define
    Run = Instance.run
    IsRunning = Instance.isRunning
    ShutDown = Instance.shutDown
+   ColdRestart = Instance.coldRestart
 end

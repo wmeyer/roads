@@ -73,10 +73,8 @@ define
    fun {ShowVotedAnswers Answers}
       {UL
        {Map Answers
-	fun {$ answer(text:ATxt votes:V ...)}
-	   'div'(ATxt#": "#V#" votes"
-		 br
-		)
+	fun {$ answer(text:Text votes:VoteCount ...)}
+	   Text#": "#VoteCount#" votes"
 	end
        }
       }

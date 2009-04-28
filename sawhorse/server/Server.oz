@@ -159,6 +159,7 @@ define
 			  logException#LogException
 			  logAccess#LogAccess
 			  trace#Trace
+			  logStream#ErrorStream
 			 ]}
    end
 

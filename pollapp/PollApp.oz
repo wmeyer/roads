@@ -3,8 +3,9 @@ import
    DBServer at 'x-ozlib://wmeyer/db/Server.ozf'
    Model
    JavaScriptCode
-   Support(toTag:ToTag)
+   Support(table:Table)
 export
+   AppName
    Functors
    PagesExpireAfter
    Init
@@ -12,6 +13,8 @@ export
    Before
    After
 define
+   AppName = "pollapp"
+   
    Functors = unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
 		   'admin':'x-ozlib://wmeyer/pollapp/Admin.ozf'
 		  )
@@ -159,15 +162,6 @@ define
 	 )
    end
 
-   fun {Table Rows}
-      {ToTag table {Map Rows ToRow}}
-   end
-
-   %% [X Y] -> tr(td(X) td(Y))
-   fun {ToRow Cols}
-      {ToTag tr {Map Cols fun {$ C} td(C) end}}
-   end
-   
    fun {LoginSuccess Session User Cont}
       {Session.set loginInProgress false}
       {Session.setShared user User}

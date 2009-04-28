@@ -1,6 +1,6 @@
 functor
 import
-   Support(ul:UL labelled:Labelled)
+   Support(ul:UL labelled:Labelled lr:LR)
    JavaScriptCode
 export
    '':Menu
@@ -18,14 +18,14 @@ define
       Question
    in
       'div'(h1("Create a poll: Question")
-	    form({Labelled "Enter the question: "
-		  input(type:text id:"Question" bind:Question
-			validate:length_in(1 1000))}
-		 input(type:submit value:"Submit question")
+	    form({LR [{Labelled "Enter the question: "
+		       input(type:text id:"Question" bind:Question
+			     validate:length_in(1 1000))}
+		      input(type:submit value:"Submit question")]}
+		 method:post
 		 action:fun {$ _}
 			   {EnterOptions Question.escaped nil}
 			end
-		 method:post
 		)
 	   )
    end
@@ -36,12 +36,13 @@ define
       'div'(
 	 h1("Create a poll: Options")
 	 "Question: "#Question br
-	 {ShowAnswers Question Answers} br
+	 {ShowAnswers Question Answers}
 	 form(
-	    {Labelled "Enter a new option: "
-	     input(type:text bind:NewAnswer id:"Option"
-		   validate:length_in(1 1000))}
-	    input(type:submit name:"submit" value:"Submit option") br
+	    {LR [{Labelled "Enter a new option: "
+		  input(type:text bind:NewAnswer id:"Option"
+			validate:length_in(1 1000))}
+		 input(type:submit name:"submit" value:"Submit option")
+	     ]}
 	    method:post
 	    action:fun {$ _}
 		      {EnterOptions Question {Append Answers [NewAnswer.escaped]}}
@@ -66,13 +67,13 @@ define
       {UL
        {List.mapInd Answers
 	fun {$ I A}
-	   'div'("Option: \"" b(A) "\"  "
-		 a("(Remove this option)"
-		   href:fun {$ _}
-			   {EnterOptions Question {RemoveNth Answers I}}
-			end
-		  )
-		)
+	   unit("Option: \"" b(A) "\"  "
+		a("(Remove this option)"
+		  href:fun {$ _}
+			  {EnterOptions Question {RemoveNth Answers I}}
+		       end
+		 )
+	       )
 	end
        }
       }

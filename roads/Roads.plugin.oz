@@ -30,6 +30,7 @@ define
 		formatTime:FormatTime
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 	   Query at 'x-ozlib://wmeyer/sawhorse/server/Query.ozf'
+	   Logging(newLogger:NewLogger) at 'x-ozlib://wmeyer/sawhorse/server/Logging.ozf'
 	   Base62(is 'from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
 	   FormValidator('class') at 'x-ozlib://wmeyer/roads/FormValidator.ozf'
 	export
@@ -46,25 +47,32 @@ define
 	   State
 	define
 	   State
-
-	   RoadsName = "Roads 0.1"
-
+	   Logger
+	   
+	   RoadsName = "Roads 0.2"
+	   
 	   SecretGenerator = {IdIssuer.create 4}
-   
+
+	   fun {CreateRoadsLogger ServerConfig}
+	      LogLevel = {CondSelect Config logLevel trace}
+	   in
+	      {NewLogger init(module:"roads"
+			      stream:ServerConfig.logStream
+			      logLevel:LogLevel)}
+	   end
+	   
 	   %% Initialize all configured applications.
 	   proc {Initialize ServerConfig}
-	      State = unit(applications:{Record.map Config.applications InitNewApp}
+	      State = unit(applications:{Record.map Config.applications
+					 fun {$ A} {InitApp ServerConfig A unit} end}
 			   sessions:{Session.newCache Config}
 			   sessionIdIssuer:{IdIssuer.create 8}
 			   closureIdIssuer:{IdIssuer.create 4}
 			   serverName:ServerConfig.serverName
 			   serverConfig:ServerConfig
-			  )
-	   end
 
-	   %% Init. an app without a previous instance.
-	   fun {InitNewApp Functor}
-	      {InitApp Functor unit}
+			  )
+	      Logger = {CreateRoadsLogger ServerConfig}
 	   end
 
 	   %% Re-initialize existing applications; initialize new applications.
@@ -75,9 +83,9 @@ define
 			 if {HasFeature OldState.applications Path} then
 			    OldApp = OldState.applications.Path
 			 in
-			    {InitApp Functor OldApp.resources}
+			    {InitApp ServerConfig Functor OldApp.resources}
 			 else
-			    {InitNewApp Functor}
+			    {InitApp ServerConfig Functor unit}
 			 end
 		      end
 		     }
@@ -92,6 +100,7 @@ define
 			   serverName:ServerConfig.serverName
 			   serverConfig:ServerConfig
 			  )
+	      Logger = {CreateRoadsLogger ServerConfig}
 	   end
 
 	   fun {Link Functor}
@@ -102,8 +111,13 @@ define
 	   end
 	   
 	   %% Re-initialize an app from its previous state.
-	   fun {InitApp Functor OldResources}
+	   fun {InitApp ServerConfig Functor OldResources}
 	      AppModule = {Link Functor}
+	      AppName = {CondSelect AppModule appName app}
+	      LogLevel = {CondSelect AppModule logLevel trace}
+	      AppLogger = {NewLogger init(module:AppName
+					  stream:ServerConfig.logStream
+					  logLevel:LogLevel)}
 	      Resources = if OldResources == unit then
 			     if {HasFeature AppModule init} then {AppModule.init}
 			     else session end
@@ -111,6 +125,7 @@ define
 			     {AppModule.onRestart OldResources}
 			  else OldResources
 			  end
+	      
 	   in
 	      application(module:AppModule
 			  resources:Resources
@@ -119,6 +134,7 @@ define
 			  after:{CondSelect AppModule after fun {$ _ X} X end}
 			  forkedFunctions:{CondSelect AppModule forkedFunctions true}
 			  pagesExpireAfter:{CondSelect AppModule pagesExpireAfter 60*60}
+			  logger:AppLogger
 			 )
 	   end
 
@@ -140,50 +156,50 @@ define
 	      end
 	   end
 
-	   fun {HandleGetRequest Config Req Inputs}
-	      {HandleRequest Config get Req Inputs}
+	   fun {HandleGetRequest ServerConfig Req Inputs}
+	      {HandleRequest ServerConfig get Req Inputs}
 	   end
 
-	   fun {HandlePostRequest Config Req Inputs}
-	      {HandleRequest Config post Req Inputs}
+	   fun {HandlePostRequest ServerConfig Req Inputs}
+	      {HandleRequest ServerConfig post Req Inputs}
 	   end
 
 	   %% The central function
-	   fun {HandleRequest Config Type Req=request(uri:URI ...) Inputs}
-	      {Config.trace "Roads::HandleRequest"}
+	   fun {HandleRequest ServerConfig Type Req=request(uri:URI ...) Inputs}
+	      {Logger.trace "Roads::HandleRequest"}
 	      Path = URI.path
 	      %% get session from cookie or create a new one
-	      MyState = {StateFromRequest Req}
 	      IsNewSession
 	      SessionIdChanged
 	      RSession = case {Session.fromRequest State Req} of just(S) then
-			    IsNewSession = false S
+			    IsNewSession = false
+			    S
 			 else
 			    SessionId = {Session.newId State}
 			 in
-			    {Config.trace newSession}
+			    {Logger.trace newSession}
 			    IsNewSession = true
 			    {State.sessions condGet(SessionId
-						    {Session.new MyState Config Path
+						    {Session.new State Path
 						     SessionId})}
 			 end
-	      {Config.trace "Roads::HandleRequest, got session"}
 	      %% find out which function to call (if no closure is given)
+	      %% (here we use request-dependent global state to use the old configuration
+	      %%  for old sessions)
 	      PathComponents
 	      App Functr Function MaybeClosureId
-	      {Routing.analyzePath MyState Path
+	      {Routing.analyzePath {StateFromRequest Req} Path
 	       ?PathComponents ?App ?Functr ?Function ?MaybeClosureId}
 	      = true
 	      BasePath = PathComponents.basePath
-	      {Config.trace "Roads::HandleRequest, got function"}
 	      TheResponse =
 	      case MaybeClosureId of nothing then
 		 %% WITHOUT CLOSURE
 		 if Type == get then
-		    {Config.trace "Roads::HandleRequest, get"}
+		    {Logger.trace "Roads::HandleRequest, get"}
 		    %% GET REQUEST: execute function
 		    {ExecuteGetRequest
-		     unit(config:Config
+		     unit(serverConfig:ServerConfig
 			  app:App
 			  functr:Functr
 			  function:Function
@@ -201,7 +217,7 @@ define
 		    %% (Post/Redirect/Get pattern)
 		    NewClosureId = {Session.newClosureId State RSession}
 		 in
-		    {Config.trace "Roads::HandleRequest, post"}
+		    {Logger.trace "Roads::HandleRequest, post"}
 		    {Session.addClosure
 		     unit(closureId:NewClosureId
 			  space:unit
@@ -211,33 +227,33 @@ define
 			  session:{Session.prepareFutureSession RSession Inputs}
 			  function:Function)
 		    }
-		    {RedirectResponse MyState.serverConfig 303
+		    {RedirectResponse ServerConfig 303
 		     {PathToClosure BasePath NewClosureId}}
 		 end
 	      [] just(ClosureIdS) then
 		 %% WITH CLOSURE (candidate)
 		 if {Not {Base62.is ClosureIdS}} then
-		    {NotFoundResponse MyState.serverConfig}
+		    {NotFoundResponse ServerConfig}
 		 else
 		    ClosureId = {Base62.'from' ClosureIdS}
 		 in
-		    {Config.trace "Roads::HandleRequest, got closure"}
+		    {Logger.trace "Roads::HandleRequest, got closure"}
 		    case {Session.getClosure RSession ClosureId}
 		    of nothing then %% expired closure
 		       NewPath = {RemoveClosureId Req.originalURI}
 		    in
-		       {Config.trace
+		       {Logger.trace
 			"Roads::HandleRequest, closure expired; redirecting to "#NewPath}
 		       %% redirect to same url without closure
 		       %% It is up to the single function to decide if it works
 		       %% without previous state
-		       {RedirectResponse MyState.serverConfig 303 NewPath}
+		       {RedirectResponse ServerConfig 303 NewPath}
 		    [] just(Closure) then
 		       if Type == get then
-			  {Config.trace "Roads::HandleRequest, get2"}
+			  {Logger.trace "Roads::HandleRequest, get2"}
 			  %% GET REQUEST: execute function, possibly in cloned space.
 			  {ExecuteGetRequest
-			   unit(config:Config
+			   unit(serverConfig:ServerConfig
 				app:Closure.app
 				functr:Closure.functr
 				function:Closure.function
@@ -259,7 +275,7 @@ define
 			  NewClosureId = {Session.newClosureId State RSession}
 			  
 		       in
-			  {Config.trace "Roads::HandleRequest, post2"}
+			  {Logger.trace "Roads::HandleRequest, post2"}
 			  {Session.addClosure
 			   unit(closureId:NewClosureId
 				space:Closure.space
@@ -270,7 +286,7 @@ define
 					 Closure.session Inputs}
 				function:Closure.function)
 			  }
-			  {RedirectResponse Config 303
+			  {RedirectResponse ServerConfig 303
 			   {PathToClosure BasePath NewClosureId}}
 		       end
 		    end
@@ -278,7 +294,7 @@ define
 	      end
 	   in
 	      if IsNewSession orelse {IsDet SessionIdChanged} andthen SessionIdChanged then
-		 {AddSessionCookie Config TheResponse RSession PathComponents}
+		 {AddSessionCookie TheResponse RSession PathComponents}
 	      else
 		 TheResponse
 	      end
@@ -306,8 +322,7 @@ define
 	      {PreProcessor Sess.interface Fun}
 	   end
    
-	   fun {AddSessionCookie Config Resp CSession PathComponents}
-	      {Config.trace "Cookie path: "#{Routing.buildPath [PathComponents.app]}}
+	   fun {AddSessionCookie Resp CSession PathComponents}
 	      {Cookie.setCookie Resp
 	       cookie(name:Session.sessionCookie
 		      value:{Int.toString @(CSession.id)}
@@ -337,7 +352,7 @@ define
 	   end
 	   
 	   fun {ExecuteGetRequest
-		unit(config:Config
+		unit(serverConfig:ServerConfig
 
 		     app:App
 		     functr:Functr
@@ -356,23 +371,19 @@ define
 	      CookiesToSend
 	      TheResponse
 	   in
-	      {Config.trace "Roads::ExecuteGetRequest"}
 	      {Context.forAll CSession closureCalled(ClosureId)}
-	      {Config.trace "Roads::ExecuteGetRequest2"}
 	      Res#
 	      SessionIdChanged#
 	      CookiesToSend
 	      =
 	      {Speculative.evalInSpace ClosureSpace
 	       fun {$}
-		  {Config.trace "Roads::ExecuteGetRequest2b"}
 		  %% Session must be prepared in the space
 		  %% to make the private dict local
-		  PSession = {Session.'prepare' State CSession Req Inputs}
+		  PSession = {Session.'prepare' State App.logger CSession Req Inputs}
 		  RealFun = {NewCell {CallBefore PSession App Functr Function}}
 		  FunResult
 	       in
-		  {Config.trace "Roads::ExecuteGetRequest2c"}
 		  try
 		     FunResult =
  		     %% Execute application function;
@@ -388,12 +399,11 @@ define
 		     end
 		     %% If result is a html doc, preprocess and render it;
 		     %% otherwise pass through
-		     {Config.trace "Roads::ExecuteGetRequest2d"}
 		     case FunResult of redirect(...) then FunResult
 		     [] response(...) then FunResult
 		     [] HtmlDoc then
 			{Html.render
-			 {PreprocessHtml Config
+			 {PreprocessHtml
 			  {CallAfter PSession App Functr HtmlDoc}
 			  App Functr
 			  PSession ClosureSpace PathComponents
@@ -412,23 +422,21 @@ define
 		  @(PSession.cookiesToSend)
 	       end
 	      }
-	      {Config.trace "Roads::ExecuteGetRequest3"}
 	      %% create response object (or propagate exception)
 	      TheResponse = 
 	      case Res of exception(E) then raise E end
 	      [] response(...) then Res
 	      [] redirect(C Url) then
 		 Location = {MakeURL PathComponents Url} in
-		 {RedirectResponse Config C Location}
+		 {RedirectResponse ServerConfig C Location}
 	      else
 		 {OkResponse
-		  Config
+		  ServerConfig
 		  generated(Res)
 		  [{ContentTypeHeader mimeType(text html)}
 		   {ExpiresHeader {OsTime.gmtime {OS.time}+App.pagesExpireAfter}}]
 		  withBody}
 	      end
-	      {Config.trace "Roads::ExecuteGetRequest4"}
 	      %% add application cookies
 	      {FoldR CookiesToSend
 	       fun {$ MyCookie Resp}
@@ -501,7 +509,7 @@ define
 	   %% (Do not add it to form that use a url as the action handler, because
 	   %%  those form use a bookmarkable handler without secret checking.)
 	   fun {AddSecrets H}
-	      case H of form(...) andthen {Procedure.is {CondSelect H action unit}} then
+	      case H of form(...) andthen {AttrIsProcedure H action} then
 		 S = {Int.toString {SecretGenerator}}
 	      in
 		 {TupleAdd H
@@ -512,10 +520,18 @@ define
 	      else H
 	      end
 	   end
-   
+
+	   fun {AttrIsProcedure Tag Attr}
+	      A = {CondSelect Tag Attr unit}
+	   in
+	      case A of fork(V) then {Procedure.is V}
+	      else {Procedure.is A}
+	      end
+	   end
+	   
 	   %% Replace special elements in generated html.
 	   %% (might crash for ill-formed html)
-	   fun {PreprocessHtml Config HtmlDoc App Functr Sess
+	   fun {PreprocessHtml HtmlDoc App Functr Sess
 		CurrentSpace PathComponents}
 	      Validator = {NewCell unit}
 	      fun {CallValidator Type Tag}
@@ -526,9 +542,7 @@ define
 		 [] just(N) then name#N
 		 end
 	      end
-	      Res
 	   in
-	      Res =
 	      {Html.mapAttributes {AddSecrets HtmlDoc}
 	       %% a new FormValidator for every form tag
 	       proc {$ Tag OpenClose}
@@ -561,8 +575,6 @@ define
 		  end
 	       end
 	      }
-	      {Config.trace "PreprocessHtml, end"}
-	      Res
 	   end
 
 	   fun {ProcessTargetAttribute App Functr

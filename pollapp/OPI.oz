@@ -4,4 +4,3 @@ in
 {Roads.registerApplication poll 'x-ozlib://wmeyer/pollapp/PollApp.ozf'}
 {Roads.setSawhorseOption errorLogFile stdout}
 {Roads.run}
-%{Roads.shutDown}

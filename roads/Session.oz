@@ -111,7 +111,7 @@ define
       end
    in
    %% Add the user interface to a session.
-   fun {AddInterface State S}
+   fun {AddInterface State Logger S}
       fun {GetCookieExt Key}
 	 {Port.sendRecv CookiePort getCookie(S.request Key)}
       end
@@ -184,8 +184,8 @@ define
 			end
 	   setCookie:SetCookie
 	   %% logging
-	   logTrace:S.serverConfig.trace
-	   logError:S.serverConfig.logError
+	   logTrace:Logger.trace
+	   logError:Logger.error
 	   )
        }
       }
@@ -208,7 +208,7 @@ define
       {Cache.create {CondSelect Config sessionDuration 60*60*1000} Destroy}
    end
    
-   fun {NewSession State ServerConfig Path Id}
+   fun {NewSession State Path Id}
       just(App) = {Routing.getApplication State Path}
       Closures = {ClosureDict.new}
       IdCell = {NewCell Id}
@@ -236,12 +236,11 @@ define
 			  {Port.send IdPort Id}
 		       end
 		    end
-	      serverConfig:ServerConfig
 	     )
    end
 
    %% Prepare a session to be used in a user-defined function,
-   fun {PrepareSession State Session Req Inputs}
+   fun {PrepareSession State Logger Session Req Inputs}
       RealInputs
       S2
    in
@@ -252,7 +251,7 @@ define
 	 RealInputs = Inputs
 	 S2 = Session
       end
-      {AddInterface State
+      {AddInterface State Logger
        {AdjoinList S2
 	[params#RealInputs
 	 private#{PrivateDict.clone Session.private}

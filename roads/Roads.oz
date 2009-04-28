@@ -12,6 +12,7 @@ export
    Run
    IsRunning
    ShutDown
+   ColdRestart
 define
    SawhorseConfig = {NewCell config}
    RoadsConfig = {NewCell config}
@@ -95,5 +96,10 @@ define
 	    raise roads(shutDown(notStarted)) end
 	 end
       end
+   end
+
+   proc {ColdRestart}
+      try {ShutDown} catch roads(shutDown(notStarted)) then skip end
+      {Run}
    end
 end

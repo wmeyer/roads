@@ -40,7 +40,7 @@ define
    
    fun {RenderElement H}
       case H of '#'(...) then H % a virtual string
-      [] '|'(...) then H % a string
+      [] First|_ andthen {Char.is First} then H % a string
       [] nil then H
       [] unit(...) then {ConcatVSMap {Record.toList H} RenderElement}
       [] noHtml then nil
