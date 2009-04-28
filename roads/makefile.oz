@@ -1,5 +1,5 @@
 makefile(
-   subdirs:['examples']
+   subdirs:['appSupport' 'examples']
    lib:['Config.ozf' 'Roads.plugin.ozf' 'Speculative.ozf' 'Base62.ozf' 'Session.ozf'
 	'Context.ozf' 'Routing.ozf' 'Validator.ozf' 'FormValidator.ozf'
 	'Roads.ozf'

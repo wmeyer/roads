@@ -161,6 +161,8 @@ define
    fun {ApplyMessage DB Msg}
       case Msg of insert(What NewRow) then
 	 {Ops.insert DB What ?NewRow}
+      [] insert(What) then
+	 {Ops.insert DB What _}
       [] update(What where:Where) then
 	 {Ops.update DB What Where}
       [] delete(Table where:Where) then

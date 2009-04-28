@@ -165,7 +165,14 @@ define
 	       else {Sort DistinctRows Info.sorter}
 	       end
    in
-      Sorted
+      case Sorted of nil then nil
+      [] First|_ then
+	 case {Arity First} of [T] then %% only one table
+	    {Map Sorted fun {$ R} R.T end}
+	 else
+	    Sorted
+	 end
+      end
    end
 
    

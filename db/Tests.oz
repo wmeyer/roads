@@ -12,17 +12,6 @@ define
      end
    end
    
-   fun {MakeRow TableRows}
-      TRs = if {IsList TableRows} then TableRows else [TableRows] end
-   in
-      {FoldL TRs
-       fun {$ R TR}
-	  {AdjoinAt R {Label TR} TR}
-       end
-       row
-      }
-   end
-
    Log = System.showInfo
    
    Filename = "test_database.dat"
@@ -69,19 +58,19 @@ define
 		     where:[customer(email) '=' "hans@example.com"])}
       {Server selectSync(customer(city)
 		     where:[customer(email) '=' "hans@example.com"] result:$)}
-      = [{MakeRow customer(city:newyork)}]
+      = [customer(city:newyork)]
       {Server update(customer(city:rome)
 		     where:[customer(email) '=' "hans@example.com"])}
       %% check auto generated key
       {Server insert(purchase(customer:"hans@example.com"))}
       {Server selectSync(purchase('*') result:$)}
-      = [{MakeRow purchase(id:0 customer:"hans@example.com")}]
+      = [purchase(id:0 customer:"hans@example.com")]
       {AssertRaises
        proc {$} {Server insert(purchase(id:1 customer:"hans@example.com"))} end}
       %% test aliases in where-clauses
       {Server select(customer(name(as:cn) city)
 		     where:[customer(cn) '=' hans] result:$)}
-      = [{MakeRow customer(cn:hans city:rome)}]
+      = [customer(cn:hans city:rome)]
       %% delete a referencing row and then the referenced row
       {Server delete(purchase)}
       {Server delete(customer where:[customer(email) '=' "hans@example.com"])}

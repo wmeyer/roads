@@ -13,9 +13,9 @@ define
 	 Filename
 	}
    for NumObjects in [
-		      %3000
+		      3000
 		      %10000
-		      30000
+		      %30000
 		      %100000
 		     ] do
       StartTime = {Property.get 'time.total'}
@@ -41,7 +41,7 @@ define
       {System.showInfo "Inserted "#NumObjects#" objects: "#Delta}
    end
 
-/*   %% read all
+   %% read all
    local
       StartTime = {Property.get 'time.total'}
       AllPilots = {DB select(australia('*') result:$)}
@@ -49,7 +49,7 @@ define
       {System.showInfo "Select executed: "#Delta0}
       Sum = {NewCell 0}
       for P in AllPilots do
-	 Sum := @Sum + P.australia.points
+	 Sum := @Sum + P.points
       end
       Delta = {Property.get 'time.total'} - StartTime
    in
@@ -65,7 +65,7 @@ define
    in
       {System.showInfo "Deleted all objects: "#Delta}
    end
-  */ 
+
    {Server.shutDown DB}
    {OS.unlink Filename}
    {Application.exit 0}

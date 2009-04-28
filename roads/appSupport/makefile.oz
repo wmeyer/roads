@@ -1,0 +1,4 @@
+makefile(
+   lib:['ActiveObject.ozf'
+       ]
+   )

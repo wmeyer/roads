@@ -20,7 +20,7 @@ define
 		   logDir: "sawhorse-log"
 		   accessLogFile: "http-access.log"
 		   accessLogLevel: trace
-		   errorLogFile: "http-error.log"
+		   errorLogFile: stdout
 		   errorLogLevel: trace
 		   pluginDir: "x-ozlib://wmeyer/sawhorse/plugins"
 		   plugins: unit

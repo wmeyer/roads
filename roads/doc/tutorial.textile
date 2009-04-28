@@ -44,7 +44,7 @@ Execute the code in Emacs (menu Oz->Feed Buffer) and navigate to "http://localho
 You can stop the application (and the web server) by feeding the line
 <pre><code>{Roads.shutDown}</code></pre> or by halting Oz with <code>C-. h</code>. 
 
-In case of problems, you might want to add the line <code>{Roads.setSawhorseOption errorLogFile stdout}</code> before <code>{Roads.run}</code>. Then you will be able to see error log messages directly in the OPI.
+In case of problems, take a look at the <code>*Oz Emulator*</code> buffer, which by default receives Sawhorse and Roads log messages.
 
 This simple example just returns a "record":http://www.mozart-oz.org/home/doc/tutorial/node3.html#label19 value which represents a minimalistic, static HTML page. Let’s continue with a more interesting example.
 
@@ -84,6 +84,20 @@ Most of the code in the <code>Said</code> function is just standard HTML, encode
 # Input tags can have an additional <code>bind</code> attribute. It takes either a variable (like in this example) which will receive the submitted value, or a unary procedure which will be called with the input value.
 # <code>href</code> and <code>action</code> attributes can take function values instead of URLs. These are automatically converted to unique URLs. When these URLs are requested, the framework will make sure that the right function is called in the right context.
 
+The generated HTML for the outer function looks like this:
+<pre><code>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+ <body>
+  <form action="/said/29T8MW" method="post" >
+   <input name="roadsFormBinding0" type="text" >
+   <input type="submit" >
+   <input name="roadsSecret" type="hidden" value="~589607788" >
+  </form>
+ </body>
+</html>
+</code></pre>
+
 By using anonymous functions and exploiting lexical scoping, we are able to access the <code>Foo</code> variable and embed the user-entered text into our output.
 
 What happens when we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to different values. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in section "Communicating through Ports":#ctp.<br>
@@ -92,7 +106,7 @@ The <code>bind</code> attribute is not merely a matter of convenience. It is als
 
 h4. Grouping Functions in Functors
 
-There is one real problem with this example, though. The three functions do not return valid HTML documents but only fragments. We could fix this by extending all three function with <code>html(body(...))</code>. However, there is a simpler way to share code between multiple functions.
+There is one real problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a simpler way to share code between multiple functions.
 
 To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document:
 
@@ -158,6 +172,8 @@ h3. Other Features
  h4. Composable Form Parts
 <a name="cfp"></a>
 - thanks to bind and validate, like formlets
+
+ h4. Logging 
 
  h4. CSS
 

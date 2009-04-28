@@ -30,32 +30,32 @@ define
 	   )
    end
 
-   fun {EnterOptions Question Answers}
-      NewAnswer
+   fun {EnterOptions Question Options}
+      NewOption
    in
       'div'(
 	 h1("Create a poll: Options")
 	 "Question: "#Question br
-	 {ShowAnswers Question Answers}
+	 {ShowOptions Question Options}
 	 form(
 	    {LR [{Labelled "Enter a new option: "
-		  input(type:text bind:NewAnswer id:"Option"
+		  input(type:text bind:NewOption id:"Option"
 			validate:length_in(1 1000))}
 		 input(type:submit name:"submit" value:"Submit option")
 	     ]}
 	    method:post
 	    action:fun {$ _}
-		      {EnterOptions Question {Append Answers [NewAnswer.escaped]}}
+		      {EnterOptions Question {Append Options [NewOption.escaped]}}
 		   end
 	    a("Done"
 	      href:fun {$ S}
-		      NewPollId = {S.model createPoll(Question Answers result:$)}
+		      NewPollId = {S.model createPoll(Question Options result:$)}
 		   in
-		      'div'("Poll added. " br
-			    a("View new poll"
+		      'div'(a("New poll"
 			      href:url('functor':'' function:show
 				       params:unit(pollid:NewPollId))
-			      )
+			     )
+			    " added. "
 			   )
 		   end
 	     )
@@ -63,14 +63,14 @@ define
 	 )
    end
 
-   fun {ShowAnswers Question Answers}
+   fun {ShowOptions Question Options}
       {UL
-       {List.mapInd Answers
+       {List.mapInd Options
 	fun {$ I A}
 	   unit("Option: \"" b(A) "\"  "
 		a("(Remove this option)"
 		  href:fun {$ _}
-			  {EnterOptions Question {RemoveNth Answers I}}
+			  {EnterOptions Question {RemoveNth Options I}}
 		       end
 		 )
 	       )
@@ -166,7 +166,9 @@ define
 		)
 	    )
       else
-	 html(body(Doc))
+	 html(
+	    head(title("Administrate polls"))
+	    body(Doc))
       end
    end
 end

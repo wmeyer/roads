@@ -14,9 +14,7 @@ define
    Log = System.showInfo
 
    fun {MakeRow TableRows}
-      TRs = if {IsList TableRows} then TableRows else [TableRows] end
-   in
-      {FoldL TRs
+      {FoldL TableRows
        fun {$ R TR}
 	  {AdjoinAt R {Label TR} TR}
        end
@@ -88,8 +86,7 @@ define
       {Server select(work('*')
 		     orderBy:work(name)
 		     result:$)}
-      = 
-      {MakeRows WorkData}
+      = WorkData
       for Data in [FrequentsData ServesData LikesData] do
 	 for Row in Data do {Server insert(Row)} end
       end
@@ -106,7 +103,7 @@ define
       {Log "TestComplexLiterals"}
       {Server insert(work(name:"jo" hours:~1 rate:3.1e~44#1.e26))}
       {Server select(work('*') where:[work(name) '=' "jo"] result:$)}
-      = [{MakeRow work(name:"jo" hours:~1 rate:3.1e~44#1.e26)}]
+      = [work(name:"jo" hours:~1 rate:3.1e~44#1.e26)]
       {Server delete(work where:[work(name) '=' "jo"])}
       {Server select(work('*') where:[work(name) '=' "jo"] result:$)}
       = nil
@@ -129,85 +126,81 @@ define
       {Server select(accesses(sum(hits))
 		     where:[accesses(page) '=' "people.html"]
 		     result:$)}
-      = [{MakeRow accesses('sum(hits)':439+12+665)}]
+      = [accesses('sum(hits)':439+12+665)]
 
       {Server select(accesses(month sum(hits(as:totalhits)))
 		     where:[accesses(month) '<>' 1]
 		     orderBy:accesses(totalhits)
 		     result:$)}
-      = [{MakeRow accesses(month:3 totalhits:2713)}
-	 {MakeRow accesses(month:2 totalhits:3962)}]
+      = [accesses(month:3 totalhits:2713)
+	 accesses(month:2 totalhits:3962)]
       
       {Server select(accesses(month sum(hits(as:totalhits)))
 		     orderBy:desc(accesses(totalhits))
 		     result:$)}
-      = [{MakeRow accesses(month:2 totalhits:3962)}
-	 {MakeRow accesses(month:3 totalhits:2713)}
-	 {MakeRow accesses(month:1 totalhits:2554)}
+      = [accesses(month:2 totalhits:3962)
+	 accesses(month:3 totalhits:2713)
+	 accesses(month:1 totalhits:2554)
 	]
       
       {Server select(accesses(month sum(hits(as:totalhits)))
 		     having:[accesses(totalhits) '<' 3000]
 		     orderBy:desc(accesses(totalhits))
 		     result:$)}
-      = [{MakeRow accesses(month:3 totalhits:2713)}
-	 {MakeRow accesses(month:1 totalhits:2554)}]
+      = [accesses(month:3 totalhits:2713)
+	 accesses(month:1 totalhits:2554)]
       
       {Server select(accesses(countDistinct(month) countDistinct(page))
 		     result:$)}
-      = [{MakeRow accesses('countDistinct(month)':3
-			   'countDistinct(page)':3)}]
+      = [accesses('countDistinct(month)':3
+		  'countDistinct(page)':3)]
 
       {Server select(accesses(month hits page)
 		     orderBy:[accesses(month) desc(accesses(hits))]
 		     result:$)}
-      = {MakeRows
-	 [accesses(month:1 hits:2100 page:"index.html")
-	  accesses(month:1 hits:439 page:"people.html")
-	  accesses(month:1 hits:15 page:"products.html")
-	  accesses(month:2 hits:3300 page:"index.html")	  
-	  accesses(month:2 hits:650 page:"products.html")	  
-	  accesses(month:2 hits:12 page:"people.html")	  
-	  accesses(month:3 hits:1950 page:"index.html")	  
-	  accesses(month:3 hits:665 page:"people.html")	  
-	  accesses(month:3 hits:98 page:"products.html")
-	 ]
-	}
+      = 
+      [accesses(month:1 hits:2100 page:"index.html")
+       accesses(month:1 hits:439 page:"people.html")
+       accesses(month:1 hits:15 page:"products.html")
+       accesses(month:2 hits:3300 page:"index.html")	  
+       accesses(month:2 hits:650 page:"products.html")	  
+       accesses(month:2 hits:12 page:"people.html")	  
+       accesses(month:3 hits:1950 page:"index.html")	  
+       accesses(month:3 hits:665 page:"people.html")	  
+       accesses(month:3 hits:98 page:"products.html")
+      ]
    end
    proc {TestTrivialQueries1 Server}
       {Log "TestTrivialQueries1"}
       {Server select(work(name hours)
 		     orderBy:work(name)
 		     result:$)}
-      = {MakeRows
-	 [
-	  work(name:"carla" hours:9)
-	  work(name:"cliff" hours:26)
-	  work(name:"diane" hours:3)
-	  work(name:"norm" hours:45)
-	  work(name:"rebecca" hours:120)
-	  work(name:"sam" hours:30)
-	  work(name:"woody" hours:80)
-	 ]
-	}
+      = [
+	 work(name:"carla" hours:9)
+	 work(name:"cliff" hours:26)
+	 work(name:"diane" hours:3)
+	 work(name:"norm" hours:45)
+	 work(name:"rebecca" hours:120)
+	 work(name:"sam" hours:30)
+	 work(name:"woody" hours:80)
+	]
    end
    proc {TestTrivialQueries3 Server}
       {Log "TestTrivialQueries3"}
       {Server select(serves(quantity bar beer)
 		     orderBy:[serves(bar) serves(beer)]
 		     result:$)}
-      = {MakeRows
-	 [
-	  serves(bar:cheers beer:bud quantity:500)
-	  serves(bar:cheers beer:samaddams quantity:255)
-	  serves(bar:frankies beer:snafu quantity:5)
-	  serves(bar:joes beer:bud quantity:217)
-	  serves(bar:joes beer:mickies quantity:2222)
-	  serves(bar:joes beer:samaddams quantity:13)
-	  serves(bar:lolas beer:mickies quantity:1515)
-	  serves(bar:lolas beer:pabst quantity:333)
-	  serves(bar:winkos beer:rollingrock quantity:432)
-	 ]}
+      = [
+	 serves(bar:cheers beer:bud quantity:500)
+	 serves(bar:cheers beer:samaddams quantity:255)
+	 serves(bar:frankies beer:snafu quantity:5)
+	 serves(bar:joes beer:bud quantity:217)
+	 serves(bar:joes beer:mickies quantity:2222)
+	 serves(bar:joes beer:samaddams quantity:13)
+	 serves(bar:lolas beer:mickies quantity:1515)
+	 serves(bar:lolas beer:pabst quantity:333)
+	 serves(bar:winkos beer:rollingrock quantity:432)
+	]
    end
    proc {TestTrivialQueries4 Server}
       {Log "TestTrivialQueries4"}
@@ -216,34 +209,34 @@ define
 		     orderBy:desc(frequents(perweek))
 		     result:$
 		    )}
-      = {MakeRows [
-		   frequents(bar:cheers perweek:3 drinker:"norm")
-		   frequents(bar:lolas perweek:2 drinker:"norm")
-		   frequents(bar:joes perweek:1 drinker:"norm")
-		  ]}
+      = [
+	 frequents(bar:cheers perweek:3 drinker:"norm")
+	 frequents(bar:lolas perweek:2 drinker:"norm")
+	 frequents(bar:joes perweek:1 drinker:"norm")
+	]
    end
    proc {TestSimpleRange Server}
       {Log "TestSimpleRange"}
       {Server select(work(name rate)
 		     where:[[work(rate) '>=' 20.] 'AND' [work(rate) '<=' 100.]]
 		     result:$)}
-      = [{MakeRow work(name:"sam" rate:40.2)}]
+      = [work(name:"sam" rate:40.2)]
       
       {Server select(work(name rate) where:[work(rate) 'BETWEEN' 20.#100.] result:$)}
-      = [{MakeRow work(name:"sam" rate:40.2)}]
+      = [work(name:"sam" rate:40.2)]
       
       {Server select(work(name rate)
 		     where:['NOT' [work(rate) 'BETWEEN' 20.#100.]]
 		     orderBy:work(rate)
 		     result:$)}
-      = {MakeRows [
-		   work(name:"carla" rate:3.5)
-		   work(name:"diane" rate:4.4)
-		   work(name:"woody" rate:5.4)
-		   work(name:"norm" rate:10.2)
-		   work(name:"rebecca" rate:12.9)
-		   work(name:"cliff" rate:200.0)
-		  ]}
+      = [
+	 work(name:"carla" rate:3.5)
+	 work(name:"diane" rate:4.4)
+	 work(name:"woody" rate:5.4)
+	 work(name:"norm" rate:10.2)
+	 work(name:"rebecca" rate:12.9)
+	 work(name:"cliff" rate:200.0)
+	]
    end
    proc {TestBetween Server}
       {Log "TestBetween"}
@@ -251,13 +244,13 @@ define
 		     where:['NOT' [frequents(perweek) 'BETWEEN' 2#5]]
 		     orderBy:frequents(drinker)
 		     result:$)}
-      = {MakeRows [
-		   frequents(bar:lolas perweek:1 drinker:"adam")
-		   frequents(bar:lolas perweek:6 drinker:"lola")
-		   frequents(bar:joes perweek:1 drinker:"norm")
-		   frequents(bar:frankies perweek:0 drinker:"pierre")
-		   frequents(bar:lolas perweek:1 drinker:"woody")
-		  ]}
+      = [
+	 frequents(bar:lolas perweek:1 drinker:"adam")
+	 frequents(bar:lolas perweek:6 drinker:"lola")
+	 frequents(bar:joes perweek:1 drinker:"norm")
+	 frequents(bar:frankies perweek:0 drinker:"pierre")
+	 frequents(bar:lolas perweek:1 drinker:"woody")
+	]
    end
    proc {TestIn Server}
       {Log "TestIn"}
@@ -265,12 +258,12 @@ define
 		     where:[likes(beer) 'IN' [bud pabst]]
 		     orderBy:likes(drinker)
 		     result:$)}
-      = {MakeRows [
-		   likes(drinker:"adam" beer:bud perday:2)
-		   likes(drinker:"norm" beer:bud perday:2)
-		   likes(drinker:"sam" beer:bud perday:2)
-		   likes(drinker:"woody" beer:pabst perday:2)
-		  ]}
+      = [
+	 likes(drinker:"adam" beer:bud perday:2)
+	 likes(drinker:"norm" beer:bud perday:2)
+	 likes(drinker:"sam" beer:bud perday:2)
+	 likes(drinker:"woody" beer:pabst perday:2)
+	]
    end
    proc {TestJoin1 Server}
       {Log "TestJoin1"}
@@ -378,20 +371,20 @@ define
    proc {TestAverage Server}
       {Log "TestAverage"}
       {Server select(frequents(avg(perweek(as:a))) result:$)}
-      = [{MakeRow frequents(a:2)}]
+      = [frequents(a:2)]
    end
    proc {TestGroupAverage Server}
       {Log "TestGroupAverage"}
       {Server select(serves(bar avg(quantity(as:aq)))
 		     orderBy:serves(bar)
 		     result:$)}
-      = {MakeRows [
-		   serves(bar:cheers aq:377)
-		   serves(bar:frankies aq:5)
-		   serves(bar:joes aq:817)
-		   serves(bar:lolas aq:924)
-		   serves(bar:winkos aq:432)
-		  ]}
+      = [
+	 serves(bar:cheers aq:377)
+	 serves(bar:frankies aq:5)
+	 serves(bar:joes aq:817)
+	 serves(bar:lolas aq:924)
+	 serves(bar:winkos aq:432)
+	]
    end
    proc {TestStringComparison1 Server}
       {Log "TestStringComparison1"}
@@ -399,13 +392,13 @@ define
 			 where:[frequents(drinker) '>' "norm"]
 			 orderBy:[frequents(bar) frequents(drinker)]
 			 result:$)}
-      = {MakeRows [
-		   frequents(bar:cheers perweek:5 drinker:"sam")
-		   frequents(bar:cheers perweek:5 drinker:"woody")
-		   frequents(bar:frankies perweek:0 drinker:"pierre")
-		   frequents(bar:joes perweek:2 drinker:"wilt")
-		   frequents(bar:lolas perweek:1 drinker:"woody")
-		  ]}
+      = [
+	 frequents(bar:cheers perweek:5 drinker:"sam")
+	 frequents(bar:cheers perweek:5 drinker:"woody")
+	 frequents(bar:frankies perweek:0 drinker:"pierre")
+	 frequents(bar:joes perweek:2 drinker:"wilt")
+	 frequents(bar:lolas perweek:1 drinker:"woody")
+	]
    end
    proc {TestStringComparison2 Server}
       {Log "TestStringComparison2"}
@@ -413,13 +406,13 @@ define
 			 where:[frequents(drinker) '<=' "norm"]
 			 orderBy:[frequents(bar) frequents(drinker)]
 			 result:$)}
-      = {MakeRows [
-		   frequents(bar:cheers perweek:3 drinker:"norm")
-		   frequents(bar:joes perweek:1 drinker:"norm")
-		   frequents(bar:lolas perweek:1 drinker:"adam")
-		   frequents(bar:lolas perweek:6 drinker:"lola")
-		   frequents(bar:lolas perweek:2 drinker:"norm")
-		  ]}
+      = [
+	 frequents(bar:cheers perweek:3 drinker:"norm")
+	 frequents(bar:joes perweek:1 drinker:"norm")
+	 frequents(bar:lolas perweek:1 drinker:"adam")
+	 frequents(bar:lolas perweek:6 drinker:"lola")
+	 frequents(bar:lolas perweek:2 drinker:"norm")
+	]
    end
    proc {TestStringComparison3 Server}
       {Log "TestStringComparison3"}
@@ -428,14 +421,14 @@ define
 			    'OR' [frequents(drinker) '<' "b"]]
 		     orderBy:[frequents(drinker) frequents(perweek)]
 		     result:$)}
-      = {MakeRows [
-		   frequents(bar:lolas perweek:1 drinker:"adam")
-		   frequents(bar:frankies perweek:0 drinker:"pierre")
-		   frequents(bar:cheers perweek:5 drinker:"sam")
-		   frequents(bar:joes perweek:2 drinker:"wilt")
-		   frequents(bar:lolas perweek:1 drinker:"woody")
-		   frequents(bar:cheers perweek:5 drinker:"woody")
-		  ]}
+      = [
+	 frequents(bar:lolas perweek:1 drinker:"adam")
+	 frequents(bar:frankies perweek:0 drinker:"pierre")
+	 frequents(bar:cheers perweek:5 drinker:"sam")
+	 frequents(bar:joes perweek:2 drinker:"wilt")
+	 frequents(bar:lolas perweek:1 drinker:"woody")
+	 frequents(bar:cheers perweek:5 drinker:"woody")
+	]
    end
    proc {TestStringComparison4 Server}
       {Log "TestStringComparison4"}
@@ -444,14 +437,14 @@ define
 			    ["pierre" '<>' frequents(drinker)]]
 		     orderBy:[frequents(drinker) frequents(perweek)]
 		     result:$)}
-      = {MakeRows [
-		   frequents(bar:lolas perweek:1 drinker:"adam")
-		   frequents(bar:lolas perweek:6 drinker:"lola")
-		   frequents(bar:cheers perweek:5 drinker:"sam")
-		   frequents(bar:joes perweek:2 drinker:"wilt")
-		   frequents(bar:lolas perweek:1 drinker:"woody")
-		   frequents(bar:cheers perweek:5 drinker:"woody")
-		  ]}
+      = [
+	 frequents(bar:lolas perweek:1 drinker:"adam")
+	 frequents(bar:lolas perweek:6 drinker:"lola")
+	 frequents(bar:cheers perweek:5 drinker:"sam")
+	 frequents(bar:joes perweek:2 drinker:"wilt")
+	 frequents(bar:lolas perweek:1 drinker:"woody")
+	 frequents(bar:cheers perweek:5 drinker:"woody")
+	]
    end
    proc {TestStringComparison5 Server}
       {Log "TestStringComparison5"}
@@ -459,27 +452,27 @@ define
 		     where:[frequents(drinker) '<>' "norm"]
 		     orderBy:[frequents(drinker) frequents(perweek)]
 		     result:$)}
-      = {MakeRows [
-		   frequents(bar:lolas perweek:1 drinker:"adam")
-		   frequents(bar:lolas perweek:6 drinker:"lola")
-		   frequents(bar:frankies perweek:0 drinker:"pierre")
-		   frequents(bar:cheers perweek:5 drinker:"sam")
-		   frequents(bar:joes perweek:2 drinker:"wilt")
-		   frequents(bar:lolas perweek:1 drinker:"woody")
-		   frequents(bar:cheers perweek:5 drinker:"woody")
-		  ]}
+      = [
+	 frequents(bar:lolas perweek:1 drinker:"adam")
+	 frequents(bar:lolas perweek:6 drinker:"lola")
+	 frequents(bar:frankies perweek:0 drinker:"pierre")
+	 frequents(bar:cheers perweek:5 drinker:"sam")
+	 frequents(bar:joes perweek:2 drinker:"wilt")
+	 frequents(bar:lolas perweek:1 drinker:"woody")
+	 frequents(bar:cheers perweek:5 drinker:"woody")
+	]
    end
    proc {TestDistinct Server}
       {Log "TestDistinct"}
       {Server select(distinct frequents(bar)
 		     orderBy:frequents(bar)
 		     result:$)}
-      = {MakeRows [
-		   frequents(bar:cheers)
-		   frequents(bar:frankies)
-		   frequents(bar:joes)
-		   frequents(bar:lolas)
-		  ]}
+      = [
+	 frequents(bar:cheers)
+	 frequents(bar:frankies)
+	 frequents(bar:joes)
+	 frequents(bar:lolas)
+	]
    end
    proc {TestAggregations1 Server}
       {Log "TestAggregations1"}

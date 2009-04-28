@@ -34,31 +34,27 @@ define
       case {Session.model getPoll(PollId result:$)}
       of nothing then "Poll not found"
       [] just(Poll) then
-	 Answers = {Session.model getAnswersOfPoll(PollId result:$)}
-	 UserHasVoted = {Session.model hasVotedOn({Session.getShared user}.login
-						  PollId
-						  result:$)}
+	 Options = {Session.model getOptionsOfPoll(PollId result:$)}
+	 User = {Session.getShared user}.login
+	 UserHasVoted = {Session.model hasVotedOn(User PollId result:$)}
       in
 	 'div'(h1(Poll.question)
-	       if UserHasVoted then {ShowVotedAnswers Answers}
-	       else {ShowAnswersForVoting Answers}
+	       if UserHasVoted then {ShowVotedOptions Options}
+	       else {ShowOptionsForVoting Options}
 	       end
 	      )
       end
    end
    
-   fun {ShowAnswersForVoting Answers}
+   fun {ShowOptionsForVoting Options}
       {UL
-       {Map Answers
-	fun {$ answer(id:AId text:ATxt poll:PollId ...)}
-	   a(ATxt
+       {Map Options
+	fun {$ option(id:OptionId text:Text poll:PollId ...)}
+	   a(Text
 	     href:fun {$ S}
 		     UserName = {S.getShared user}.login
 		  in
-		     if {S.model vote(UserName
-				      PollId AId
-				      result:$)}
-		     then
+		     if {S.model vote(UserName PollId OptionId result:$)} then
 			{ShowPoll S PollId}
 		     else
 			"You already voted on this."
@@ -70,11 +66,11 @@ define
       }
    end
 
-   fun {ShowVotedAnswers Answers}
+   fun {ShowVotedOptions Options}
       {UL
-       {Map Answers
-	fun {$ answer(text:Text votes:VoteCount ...)}
-	   Text#": "#VoteCount#" votes"
+       {Map Options
+	fun {$ option(text:Text votes:VoteCount ...)}
+	   Text#": "#VoteCount#" vote(s)"
 	end
        }
       }

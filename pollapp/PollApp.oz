@@ -1,6 +1,5 @@
 functor
 import
-   DBServer at 'x-ozlib://wmeyer/db/Server.ozf'
    Model
    JavaScriptCode
    Support(table:Table)
@@ -21,37 +20,13 @@ define
    PagesExpireAfter=0
 
    fun {Init}
-      Db = {DBServer.create
-	    schema(poll(id(type:int generated)
-			question
-		       )
-		   answer(id(type:int generated)
-			  poll(references:poll)
-			  text
-			  votes)
-		   user(login(type:string)
-			password
-			salt
-			isAdmin
-		       )
-		   votedOn(user(type:string references:user)
-			   poll(type:int references:poll)
-			   primaryKey:user#poll
-			  )
-		  )
-	    'PollApp.dat'}
-      M = {Model.new Db}
-   in
-      {M createAdmin}
-      session(db:Db
-	      model:M
-	     )
+      session(model:{Model.new})
    end
 
    proc {ShutDown Session}
-      {DBServer.shutDown Session.db}
+      {Session.model shutDown}
    end
-
+   
    %% Authentication
    fun {Before Session Fun}
       IsLoggedIn = {Session.memberShared user}
@@ -59,7 +34,7 @@ define
    in
       if IsLoggedIn orelse LoggingIn then Fun
       else %% let user log in and then show original page
-	 fun {$ Session} {Login Session Fun} end
+	 fun {$ Session} {Login Session Session.request.originalURI} end
       end
    end
    
@@ -69,6 +44,7 @@ define
    in
       if {Not IsLoggedIn} then
 	 html(
+	    head(title:"Poll application")
 	    body(onLoad:JavaScriptCode.activateFirstForm
 		 Doc))
       else
@@ -104,10 +80,10 @@ define
       redirect(303 url('functor':'' function:''))
    end
    
-   fun {Login Session Cont}
+   fun {Login Session OriginalURL}
       {Session.set loginInProgress true}
-      'div'({LoginExistingUser Cont}
-	    {LoginNewUser Cont}
+      'div'({LoginExistingUser OriginalURL}
+	    {LoginNewUser OriginalURL}
 	   )
    end
 
@@ -165,7 +141,7 @@ define
    fun {LoginSuccess Session User Cont}
       {Session.set loginInProgress false}
       {Session.setShared user User}
-      {Cont Session}
+      redirect(303 Cont)
    end
 
    fun {LoginError Text Cont}
@@ -183,7 +159,7 @@ define
 
    fun {EnterPassword Label Id ?Password}
       [label('for':Id Label)
-       input(type:text id:Id bind:Password
+       input(type:password id:Id bind:Password
 	     validate:length_in(5 12))
       ]
    end
