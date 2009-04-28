@@ -44,7 +44,7 @@ define
    in
       if {Not IsLoggedIn} then
 	 html(
-	    head(title:"Poll application")
+	    head(title("Poll application"))
 	    body(onLoad:JavaScriptCode.activateFirstForm
 		 Doc))
       else

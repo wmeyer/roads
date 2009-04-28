@@ -21,16 +21,12 @@ define
 	   )
    end
 
-   %% Bookmarkable function to show a specific vote.
+   %% Show a specific poll. With vote links if user did not yet vote.
+   %% Bookmarkable.
    fun {Show Session}
       {Session.validateParameters [pollid(validate:int)]}
       PollId = {StringToInt {Session.getParam pollid}.original}
    in
-      {ShowPoll Session PollId}
-   end
-
-   %% Show a specific poll. With vote links if user did not yet vote.
-   fun {ShowPoll Session PollId}
       case {Session.model getPoll(PollId result:$)}
       of nothing then "Poll not found"
       [] just(Poll) then
@@ -55,7 +51,7 @@ define
 		     UserName = {S.getShared user}.login
 		  in
 		     if {S.model vote(UserName PollId OptionId result:$)} then
-			{ShowPoll S PollId}
+			redirect(303 url(function:show params:unit(pollid:PollId)))
 		     else
 			"You already voted on this."
 		     end
