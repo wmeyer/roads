@@ -1,13 +1,13 @@
 functor
 import
-   NonSituatedDictionary at 'x-ozlib://wmeyer/sawhorse/pluginSupport/NonSituatedDictionary.ozf'
+%   NonSituatedDictionary at 'x-ozlib://wmeyer/sawhorse/pluginSupport/NonSituatedDictionary.ozf'
 export
    'class':Context   
    NewDict
    CloneDict
    ForAll
 define
-   ContextDict = NonSituatedDictionary
+   ContextDict = Dictionary
    NewDict = ContextDict.new
    CloneDict = ContextDict.clone
    
@@ -67,36 +67,43 @@ define
 	    session
 	    id
 	    closures
+	    port
 	 attr
 	    closureWasCalled
 	 meth init(Session)
-	    P
-	 in
 	    thread
-	       for Msg in {CreateToplevelPort $ P} do
+	       for Msg in {CreateToplevelPort $ self.port} do
 		  {self Msg}
 	       end
 	    end
 	    self.session = Session
 	    self.id = {C}
-	    {Wait P}
-	    {ContextDict.put Session.contexts self.id P}
+	    {Wait self.port}
+	    {ContextDict.put Session.contexts self.id self.port}
 	    self.closures = {Dictionary.new}
 	 end
+	 
 	 meth newClosure(ClosureId)
 	    {Dictionary.put self.closures ClosureId unit}
 	 end
+	 
 	 meth closureCalled(ClosureId)
 	    if {Dictionary.member self.closures ClosureId} then 
 	       @closureWasCalled = unit
 	    end
 	 end
-	 meth expire
+
+	 meth Expire
 	    {ContextDict.remove self.session.contexts self.id}
 	    for C in {Dictionary.keys self.closures} do
 	       {self.session.removeClosure C}
 	    end
 	 end
+
+	 meth expire
+	    {Port.send self.port Expire}
+	 end
+	 
 	 meth expireAfter(Milliseconds)
 	    thread
 	       {Sleep Milliseconds}

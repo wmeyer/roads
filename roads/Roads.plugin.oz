@@ -498,10 +498,12 @@ define
 	   fun {ParamsToQuery Params}
 	      case Params of unit then nil
 	      else "?"#
-		 {List.toTuple '#'
+		 {Intercalate
 		  {Map {Record.toListInd Params}
 		   fun {$ P#V} {URLEncode P}#"="#{URLEncode V} end
-		  }}
+		  }
+		  "&"
+		 }
 	      end
 	   end
 	   

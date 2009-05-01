@@ -29,7 +29,7 @@ define
       {NativeMap.put M LI Val}
    end
 
-   proc {Get M LI}
+   fun {Get M LI}
       {NativeMap.get M LI}
    end
 

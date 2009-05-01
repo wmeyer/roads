@@ -11,7 +11,8 @@ export
    Remove RemoveAll
    Member
    Items
-   Clone
+   Entries
+%   Clone
    ToRecord
 define
    fun {NewServer D}
@@ -29,6 +30,8 @@ define
 	       {Dictionary.member D LI Reply}
 	    [] items#Reply then
 	       {Dictionary.items D Reply}
+	    [] entries#Reply then
+	       {Dictionary.entries D Reply}
 	    [] exchange(LI NewVal)#Reply then
 	       OldVal in
 	       {Dictionary.exchange D LI OldVal NewVal}
@@ -41,6 +44,7 @@ define
 	       {Dictionary.remove D LI}
 	       Sync = unit
 	    [] removeAll#Sync then {Dictionary.removeAll D} Sync = unit
+	    [] clone#Result then {Dictionary.clone D Result} 
 	    end
 	 end
       end
@@ -85,6 +89,10 @@ define
       {Port.sendRecv D.port items}
    end
    
+   fun {Entries D}
+      {Port.sendRecv D.port entries}
+   end
+
    proc {Remove D LI}
       {Wait {Port.sendRecv D.port remove(LI)}}
    end
@@ -97,10 +105,12 @@ define
       {Port.sendRecv D.port member(LI)}
    end
 
+   /* Doesn't work. Not sure why.
    fun {Clone D}
-      {NewServer {Dictionary.clone D.dict}}
+      {NewServer {Port.sendRecv D.port clone}}
    end
-
+   */
+   
    fun {ToRecord L D}
       {Dictionary.toRecord L D.dict}
    end
