@@ -198,7 +198,7 @@ define
    
    proc {Destroy Session}
       {Map.removeAll Session.closures}
-      {Map.removeAll Session.private}
+      {PrivateDict.removeAll Session.private}
       {SharedDict.removeAll Session.shared}
       {TmpDict.removeAll Session.tmp}
    end

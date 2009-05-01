@@ -32,7 +32,7 @@ end
 
 in
 
-{Roads.setSawhorseOption errorLogFile stdout}
+{Roads.setOption sessionDuration 5000}
 {Roads.registerFunctor '' Pages}
 {Roads.run}
 
