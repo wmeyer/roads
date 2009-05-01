@@ -10,6 +10,7 @@ h3. Contents
 # [[Security]]
 # [[Application Development]]
 # [[Other Features]]
+# [[Future Development]]
 
 h3. Getting Started
 <a name="gettingstarted"></a>
@@ -157,12 +158,5 @@ You might have noticed that all HTML-generating functions take one argument: the
 
 Next: [[The Session Object]]
 
-
-
-
-h3. The Future
-- plugins (-> url rewriting; custom tags; other data than html)
-- caching
-- automatic usage of multiple processors / multiple machines
-- other webservers / https
+"Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net
 

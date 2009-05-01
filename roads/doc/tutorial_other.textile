@@ -4,7 +4,23 @@ h2. Other Features
 
 Roads features which have not been discussed in other chapters.
 
+h3. Contents
+
+* "Sawhorse Configuration":#sawhorse
+* "Composable Form Parts":#cfp
+* "Making Requests Bookmarkable":#mrb
+* "Returning non-HTML from user functions":#rnh
+* "JavaScript":#js
+* "JSON":#json
+* "Ajax":#ajax
+* "CSS":#css
+* "Reading and Setting Cookies":#cookies
+* "Controlling URL Expiration":#cue
+* "Logging":#logging
+
+
 h3. Sawhorse Configuration
+<a name="sawhorse"></a>
 
 * How to configure Roads' webserver.
 * Look at <code>sawhorse/server/Configuration.oz</code>:
@@ -20,7 +36,6 @@ h3. Sawhorse Configuration
                    serverAlias: nil
                    typesConfig: "x-ozlib://wmeyer/sawhorse/mime.types"
                    defaultType: mimeType(text plain)
-                   mimeTypes: mimeTypes
                    serverAdmin: "admin@localhost"
                    logDir: "sawhorse-log"
                    accessLogFile: "http-access.log"
@@ -28,7 +43,6 @@ h3. Sawhorse Configuration
                    errorLogFile: stdout
                    errorLogLevel: trace
                    pluginDir: "x-ozlib://wmeyer/sawhorse/plugins"
-                   plugins: unit
                   )
 </code></pre>
 
@@ -37,41 +51,177 @@ You may also change the code directly and recompile if you want different defaul
 
 
 h3. Composable Form Parts
+<a name="cfp"></a>
 
 - thanks to bind and validate, like formlets
 
-h3. Making Requests Bookmarkable
 
-url(...)s
+h3. Making Requests Bookmarkable
+<a name="mrb"></a>
+
+* If you use function values for <code>href</code> or <code>action</code> attributes, the resulting link will not be bookmarkable. It is only valid for the current user and only during the current session.
+* To make bookmarkable URLs, you need to
+# export the function, i.e. make it public
+# use a normal URL in <code>href</code> or <code>action</code>, either by providing a string or using a <code>url(...)</code> record (see below)
+# in forms: use <code>get</code> instead of <code>put</code>
+
+* such bookmarkable links are not guarded against CSRF attacks; so they should not have side effect
+
+* a <code>url(...)</code> record represents an URL to a Roads functions. Examples:
+# <code>url(app:poll 'functor':admin function:makeAdmin)</code> represents <code>poll/admin/makeAdmin</code>.
+# <code>url('functor':admin function:makeAdmin)</code> represents <code><current application>/admin/makeAdmin</code>.
+# <code>url(function:makeAdmin)</code> represents <code><current application>/<current functor>/makeAdmin</code>.
+# <code>url(function:makeAdmin extra:"?id=v%al")</code>: <code><current application>/<current functor>/makeAdmin?id=v%al</code>.
+# <code>url(function:makeAdmin params:unit(id:"v%al"))</code>: <code><current application>/<current functor>/makeAdmin?id=v%25al</code> (param values are percent-encoded)
+
+
 
 h3. Returning non-HTML from user functions
-- strings -> served as HTML
-- redirect(Code URL) or redirect(Code url(...))
-- response(...)
+<a name="rnh"></a>
+
+In all examples so long, we returned records that represent HTML. But you may also return:
+* virtual strings; these will be served as HTML (wrt. the HTTP content type header)
+* <code>redirect(Code URL)</code> or <code>redirect(Code url(...))</code>; creates a redirect response; for example <code>redirect(303 url(function:makeAdmin))</code>
+* a <code>response(...)</code> record; in this case, Roads will only add cookies and otherwise send the response unmodified to the client.
+
 
 h3. JavaScript
+<a name="js"></a>
 
-- validating javascript in prepare
-- writing javascript In Oz
+* The best approach is probably to serve JavaScript code as separate files which are referenced in the HTML code.
+* But you may also write JavaScript code as strings in Oz code.
+* There is a package "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip which offers some additional features:
+
+<b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. So Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint.
+
+Example (<code>/roads/examples/Ajax.oz</code>):
+<pre></code>functor Ajax
+...
+require
+   Javascript at 'x-ozlib://wmeyer/javascript/Javascript.ozf'
+prepare
+   JavaScriptCode =
+   {Javascript.checked  %% takes a list of lines
+    [
+     "function onSelectChange() {"
+     " var selected = $(\"#selector option:selected\").val();"
+     " if(selected !== undefined && selected !== \"dummy\") {"
+     "  $(\"#content\").load(\"info\", {type:selected});"
+     " }"
+     "}"
+     ""
+     "$(document).ready(function() {"
+     "                   $(\"#selector\").change(onSelectChange);"
+     "                  });"
+    ]}
+define   
+...
+</code></pre>
+
+Note that we do the JavaScript check in the <code>prepare</code> section, so this will happen at compile time. If a problem is detected, compilation will abort with an error message.
+
+<b>Writing Javascript In Oz</b>: This feature is rather a gimmick than a really useful tool ;-) Anyway it looks like this (<code>/roads/examples/Ajax2.oz</code>):
+<pre></code>functor Ajax
+export
+   Select
+   Info
+require
+   Javascript at 'x-ozlib://wmeyer/javascript/Javascript.ozf'
+prepare
+   JavaScriptCode =
+   {Javascript.convertAndCheck
+    [
+     function onSelectChange(nil)
+     [
+      var selected '=' '$'("#selector option:selected")#val(nil)';'
+      'if'(selected '!==' undefined '&&' selected '!==' "dummy")
+      [
+       '$'("#content")#load("info" ',' object(type:selected))';'
+      ]
+     ]     
+     jQuery(document)#ready(
+                        function(nil)
+                        [
+                         '$'("#selector")#change(onSelectChange)';'
+                        ])';'
+    ]
+   }
+</code></pre>
+
+It should be possible to figure out the syntax by comparing these two fragments.
+Writing JavaScript like this might be useful if you construct the code programmatically. But be warned: embedding user input in JavaScript code is extremely dangerous.
+
+<b>Embedding JavaScript in HTML</b>: Finally, you may embed the JavaScript-in-Oz code directly in the HTML structure (<code>/roads/examples/Ajax3.oz</code>):
+<pre><code>   fun {Select Session}
+      html(
+         head(
+            title("Ajax example")
+            %% load jQuery from Google
+            script(type:"text/javascript"
+                   src:"http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"
+                  )
+            script(type:"text/javascript"
+                   javascript(
+                      function onSelectChange(nil)
+                      [
+                       var selected '=' '$'("#selector option:selected")#val(nil)';'
+                       'if'(selected '!==' undefined '&&' selected '!==' "dummy")
+                       [
+                        '$'("#content")#load("info" ',' object(type:selected))';'
+                       ]
+                      ]
+                      
+                      jQuery(document)#ready(
+                                         function(nil)
+                                         [
+                                          '$'("#selector")#change(onSelectChange)';'
+                                         ])';'
+                      )
+                  )
+            )
+         body(
+            h2("Simple Ajax Example")
+            ...
+         )
+   end
+</code></pre>
+
 
 h3. JSON
+<a name="json"></a>
 
 h3. Ajax
+<a name="ajax"></a>
 
 * no special support for Ajax
 * but also no obstacles if you want to use it
-* Simple example: <code>roads/examples/Ajax.oz</code>, "http://localhost:8080/select":http://localhost:8080/select, example needs "javascript" package installed
+* Simple example: <code>roads/examples/Ajax.oz</code>, "http://localhost:8080/select":http://localhost:8080/select, example needs "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip installed
 
 h3. CSS
+<a name="css"></a>
+
+CSS code can be represented by Oz records and embedded in HTML. Example:
+<pre><code> style(type:"text/css"
+       css('div'#content
+           'border-width':".2em"
+           'border-style':solid
+           'border-color':"#900"))
+</code></pre>
+
+Take a look at <code>sawhorse/common/Css.oz</code> to find out more about the syntax.
+
 
 h3. Reading and Setting Cookies
+<a name="cookies"></a>
 
 * <code>{Session.hasCookie Key}</code>: check whether a certain cookie was sent with the current request
 * <code>{Session.getCookie Key}</code>: get the value of a cookie as a string
 * <code>{Session.getCookieExt Key}</code>: get the cookie as a value like <code>cookie(value:Val path:"/" domain:nil version:0)</code>. "path", "domain" and "version" will only be there if they were in the original cookie header.
 * <code>{Session.setCookie Key Cookie}</code>: set a cookie to be send with the current response. "Cookie" may simply be a (virtual) string value. In this case, the cookie will have a  default path that limits it to the current application. Cookie may also be a value like <code>cookie(value:"String" path:"/" httpOnly:unit otherAttribute:"foobar")</code>.
 
+
 h3. Controlling URL Expiration
+<a name="cue"></a>
 
 * By default, all URLs are valid for the duration of a session (except for bookmarkable URLs).
 * It is possible to expire URLs explicitly after a defined period of time or after a period of inactivity.
@@ -81,10 +231,13 @@ h3. Controlling URL Expiration
 
 
 h3. Logging 
+<a name="logging"></a>
 
 Functions <code>Session.logTrace</code> and <code>Session.logError</code> can be used to write log messages in the error log file (Sawhorse option <code>errorLogFile</code>). By default, these messages go to <code>stdout</code>.
 
 Messages are filtered by the application-level option <code>logLevel</code>.
 
 
-Previous: [[Application Development]] &nbsp;&nbsp; Next: [[The Future]]
+Previous: [[Application Development]] &nbsp;&nbsp; Next: [[Future Development]]
+
+"Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net

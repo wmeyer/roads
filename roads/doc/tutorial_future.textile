@@ -1,0 +1,16 @@
+h2. Future Development
+
+Features planned for future Roads releases:
+
+* Caching (fragment caching; page caching for pages which are suitable)
+* A plugin system which will allow:
+** URL rewriting
+** custom tags
+** better support for non-HTML
+* Automatic usage of multiple processors / multiple machines
+* Making Roads work with other webservers / https
+
+
+Previous: [[Other Features]]
+
+"Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net
