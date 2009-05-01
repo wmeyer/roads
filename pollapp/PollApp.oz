@@ -55,7 +55,7 @@ define
 		       css(a(':visited') 'text-decoration':none)
 		       css(a(':active') 'text-decoration':none)
 		       css(a(':hover') 'text-decoration':underline)
-		       css(a(linkbar) margin:"5px" 'background-color':"#f2f2f2")
+		       css(a(linkbar) margin:"5px" 'background-color':"#f0f0ff")
 		      )
 		)
 	    body(

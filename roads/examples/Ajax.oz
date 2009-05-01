@@ -57,6 +57,7 @@ define
    end
 
    fun {Info S}
+      {S.validateParameters [type]}
       "existed from "#
       case {S.getParam type}.original
       of "sapiens" then "200,000 years ago to now"
@@ -70,6 +71,5 @@ end
    
 in
 
-{Roads.setSawhorseOption errorLogFile stdout}
 {Roads.registerFunctor '' Ajax}
 {Roads.run}

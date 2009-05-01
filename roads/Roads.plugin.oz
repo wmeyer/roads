@@ -133,7 +133,7 @@ define
 			  before:{CondSelect AppModule before fun {$ _ X} X end}
 			  after:{CondSelect AppModule after fun {$ _ X} X end}
 			  forkedFunctions:{CondSelect AppModule forkedFunctions true}
-			  pagesExpireAfter:{CondSelect AppModule pagesExpireAfter 60*60}
+			  pagesExpireAfter:{CondSelect AppModule pagesExpireAfter 0}
 			  logger:AppLogger
 			 )
 	   end

@@ -35,7 +35,6 @@ define
    %% The dictionary module used for access to the shared session data.
    SharedDict = NonSituatedDictionary
    TmpDict = Dictionary
-   ClosureDict = Map
 
    fun {SessionIdFromRequest Req}
       case {GetCookie Req SessionCookie} of nothing then nothing
@@ -198,8 +197,8 @@ define
    end
    
    proc {Destroy Session}
-      {ClosureDict.removeAll Session.closures}
-      {PrivateDict.removeAll Session.private}
+      {Map.removeAll Session.closures}
+      {Map.removeAll Session.private}
       {SharedDict.removeAll Session.shared}
       {TmpDict.removeAll Session.tmp}
    end
@@ -210,11 +209,11 @@ define
    
    fun {NewSession State Path Id}
       just(App) = {Routing.getApplication State Path}
-      Closures = {ClosureDict.new}
+      Closures = {Map.new}
       IdCell = {NewCell Id}
    in
       session(closures:Closures
-	      removeClosure:proc {$ CId} {ClosureDict.remove Closures CId} end 
+	      removeClosure:proc {$ CId} {Map.remove Closures CId} end 
 	      private:{PrivateDict.new}
 	      shared:{SharedDict.new}
 	      tmp:{TmpDict.new}
@@ -259,6 +258,7 @@ define
 	 request#Req
 	 idChanged#{NewCell false}
 	 cookiesToSend#{NewCell nil}
+	 contexts#{Context.cloneDict Session.contexts}
 	]}
       }
    end
@@ -269,7 +269,7 @@ define
 
    %% Session, Closure Id -> Maybe Closure
    fun {GetClosure Session ClId}
-      case {ClosureDict.condGet Session.closures ClId nothing} of nothing then nothing
+      case {Map.condGet Session.closures ClId nothing} of nothing then nothing
       [] C then just(C)
       end
    end
@@ -277,7 +277,7 @@ define
    fun {NewClosureId State Session}
       Id = {State.closureIdIssuer}
    in
-      case {ClosureDict.member Session.closures Id} of false then Id
+      case {Map.member Session.closures Id} of false then Id
       else {NewClosureId State Session}
       end
    end
@@ -291,7 +291,7 @@ define
 	      functr:Functor
 	      session:PSession
 	      function:Function)}
-      {ClosureDict.put PSession.closures ClosureId
+      {Map.put PSession.closures ClosureId
        closure(space:Space
 	       fork:Fork
 	       app:App

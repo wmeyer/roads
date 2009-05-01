@@ -4,11 +4,13 @@ import
 export
    'class':Context   
    NewDict
+   CloneDict
    ForAll
 define
    ContextDict = NonSituatedDictionary
    NewDict = ContextDict.new
-
+   CloneDict = ContextDict.clone
+   
    proc {ForAll Session Msg}
       for C in {ContextDict.items Session.contexts} do
 	 {Port.send C Msg}

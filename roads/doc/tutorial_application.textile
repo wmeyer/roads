@@ -37,18 +37,203 @@ bq. We use absolute URLs with the scheme name "x-ozlib". To see how this is done
 
 The <code>ShowPoll</code> functor implements voting. Its functions are available at "http://localhost:8080/poll":http://localhost:8080/poll because it is assigned to the empty atom <code>''</code>. <code>Admin</code> implements creation and deletion of polls and other administrative tasks and is mapped to "http://localhost:8080/poll/admin":http://localhost:8080/poll/admin.
 
+
+
+h2. From here on, the documentation consists only of a rough draft!
+
+
+h4. Init, OnRestart and ShutDown
+
+<code>Init</code>: optional application function to initialize an application; although you can of course also do that with code executed in a functor at toplevel; returns a "session template", i.e. a session object with user-defined features. The data at these features will be available in every function of the application. Example:
+<pre><code>fun {Init}
+   session(model:{Model.new})
+end
+</code></pre>
+
+<code>OnRestart</code>: optional application function which is called when the server is restarted. Takes the original session template and returns an updated template. Example (not part of the actual example poll application):
+<pre><code>fun {OnRestart Session}
+   session(model:{Model.updateFrom Session.model})
+end
+</code></pre>
+
+<code>ShutDown</code>: optional application function which is called when the server is shut down (i.e. when {Roads.shutDown} is called). Example:
+<pre><code>proc {ShutDown Session}
+   {Session.model shutDown}
+end
+</code></pre>
+<br>
+
+h4. Global options
+
+Set with <code>Roads.setOption</code>.
+
+* <code>logLevel</code>: nothing, error, debug, trace; default: trace
+* <code>expireSessionsOnRestart</code>: bool; default: false; whether existing session shall expire when the server is restarted; interacts with the Sawhorse option keepAliveTimeout, i.e. for existing socket connections, the session will not expire on restart
+* <code>sessionDuration</code>: milliseconds; how long are inactive sessions kept alive?; default: 1 hour
+<br>
+<br>
+
+
 h4. Application-level options
 
+Simply export the option and set the value in the functor body.
 
-- show and explain parts of PollApp.oz; explain app level configs and before, after
-- explain differenz OPI.oz and standalone.oz
-
-
- h4. Interacting with a Model Layer and a Database
-<a name="ctp"></a>
-
-Working without spaces.
-
- h4. Hot Code Swapping
+* <code>name</code>: application name as used in app log messages; default: app
+* <code>logLevel</code>: log level for application loging; default: trace
+* <code>pagesExpireAfter</code>: seconds from now that pages will expire; goes into the "Expires" HTTP header; default: 0
+* <code>forkedFunctions</code>: bool; whether subordinate spaces are used; for advanced users; setting this to false makes "bind" attributes pretty much unusable but allows side effects directly in user functions. Can be overridden for specific functions by using <code>fork(...)</code> in action handlers and hrefs.
+<br>
+<br>
 
 
+h4. Before and After
+
+Functions exported as <code>before</code> and <code>after</code>. Available both for applications and functors. If a functor does not define them, the application definitions are used.
+
+<code>Before</code> takes a session object and the user function that is about to be called. It returns the function that will actually be called. Useful for authentication.
+
+Example:
+<pre><code>   %% Authentication
+   fun {Before Session Fun}
+      IsLoggedIn = {Session.memberShared user}
+      LoggingIn = {Session.condGet loginInProgress false}
+   in
+      if IsLoggedIn orelse LoggingIn then Fun
+      else %% let user log in and then show original page
+         fun {$ Session} {Login Session Session.request.originalURI} end
+      end
+   end
+</code></pre>
+
+<code>After</code> takes a session object and the result of a user function (typically a HTML document or a fragment). It returns a postprocessed version of the user function result. Useful to add content that is common for all functions of an application or a functor.
+
+Example (simplified from the example poll app):
+<pre><code>   %% Add list of links for logged-in users
+   fun {After Session Doc}
+      IsLoggedIn = {Session.memberShared user}
+   in
+      if {Not IsLoggedIn} then
+	 html(
+	    head(title("Poll application"))
+	    body(Doc))
+      else
+	 html(
+	    head(title("Show polls"))
+	    body(
+	       'div'(h3("Poll App")
+		     hr
+		     Doc
+		     hr
+		     'div'(a("Admin" href:url('functor':admin function:''))
+			   a("View all polls"
+			     href:url('functor':'' function:showAll))
+			   a("Logout "#{Session.getShared user}.login
+			     href:Logout)
+			  )
+		    )
+	       )
+	    )
+      end
+   end
+</code></pre>
+
+
+h3. Standalone applications (outside of the OPI)
+
+Example:
+<pre><code>functor
+import
+   Roads at 'x-ozlib://wmeyer/roads/Roads.ozf'
+define
+   {Roads.registerApplication poll 'x-ozlib://wmeyer/pollapp/PollApp.ozf'}
+   {Roads.run}
+end
+</code></pre>
+
+h3. Hot Code Swapping
+
+bq. On Windows, you need this patch: "http://lists.gforge.info.ucl.ac.be/pipermail/mozart-hackers/2008/003072.html":http://lists.gforge.info.ucl.ac.be/pipermail/mozart-hackers/2008/003072.html. Alternatively, you can replace your <code>Mozart\platform\win32-i486\emulator.dll</code> with the one available at "http://code.google.com/p/oz-code/downloads/detail?name=emulator.zip&can=2&q=":http://code.google.com/p/oz-code/downloads/detail?name=emulator.zip&can=2&q=.
+
+Just use <code>'x-ozlib://wmeyer/roads/TheRoads.ozf'</code> instead of <code>'x-ozlib://wmeyer/roads/Roads.ozf'</code>. If you start your application a second time, this will NOT try to create another server, but use the existing one and update the used application configuration and code for new sessions. Existing sessions will continue to use the old code (if not configured to expire on restart).
+
+To check that it works, delete the session cookie in your browser (<code>roadsSession</code>), or use
+<pre><code>{TheRoads.setSawhorseOption keepAliveTimeout 0}
+{TheRoads.setOption expireSessionsOnRestart true}
+</code></pre>
+
+Note that no <code>stdout</code> is available for an application that is started like this (internally uses an extra process). Therefore, Roads uses "sawhorse-logs/http-error.log" as the default log file in this case.
+
+
+h3. Calling the Model
+
+<ul>
+<li>User functions are always executed in subordinate spaces to make repeated execution of closures possible (in other words: nested user functions can read and set variables of their outer function(s) which is essential for <code>bind</code> attributes. Without subordinate spaces, every form using <code>bind</code> could only be submitted once which is against the spirit of web applications).
+<li>From within subordinate spaces, only a limited set of side effects are possible. For example, global variables can not be manipulated and writing into files is not possible.
+<li>Typical model code DOES need side effects like these.
+<li>It IS possible to send messages to other threads from within subordinate spaces.
+<li>The recommended approach is therefore to implement the model layer (or at least the interface of the model layer to the view) as active objects. We can call methods of active objects with the usual syntax. Internally, messages will be send to the thread(s) where the object(s) live.
+<li>For usage in subordinate spaces, there are additional requirements. We can not send unbound variables to other threads, but we can still receive a result by using the Oz system function <code>Port.sendRecv</code>.
+<li>Roads provides a function that creates a suitable active object from a class description that follows a certain protocol. See <code>roads/appSupport/ActiveObject.oz</code>.
+<li>For an example usage, see <code>pollapp/Model.oz</code>.
+</ul>
+Extract:
+<pre><code>
+   ...
+   fun {NewModel}
+      {ActiveObject.new Model init}
+   end
+
+   class Model
+      feat
+         db
+         
+      meth init
+         self.db = {CreateDBServer}
+         {self createAdmin}
+      end
+
+      meth shutDown
+         {DBServer.shutDown self.db}
+      end
+      
+      meth hasVotedOn(Login PollId result:Res)
+         Res=
+         case {self.db
+               select(votedOn('*')
+                      where:[[votedOn(user) '=' Login] 'AND' [votedOn(poll) '=' PollId]]
+                      result:$)}
+         of nil then false
+         else true
+         end
+      end
+
+      ...
+</code></pre>
+
+
+h3. Conclusion
+
+We recommend to study the poll application example in depth.
+The actual application interface is implemented in <code>ShowPolls.oz</code> and <code>Admin.oz</code>. The code in these functors creates dynamic HTML pages from model data in a quite simple and elegant way, using functional programming idioms and Oz' succinct record syntax.
+
+The following function from <code>Admin.oz</code> creates an unordered list of non-admin users. Each user name is rendered as a link which - when clicked - makes the user an admin:
+<pre><code>
+   fun {MakeAdmin S}
+      'div'(h1("Designate an Admin")
+            {UL
+             {Map {S.model allNonAdmins(result:$)}
+              fun {$ user(login:L ...)}
+                 a("User: "#L
+                   href:fun {$ S}
+                           {S.model makeAdmin(L)}
+                           {MakeAdmin S}
+                        end
+                  )
+              end
+             }
+            }
+           )
+   end
+</code></pre>
+
+Previous: [[Security]] &nbsp;&nbsp; Next: [[Other Features]]

@@ -109,10 +109,10 @@ define
    end
 
    fun {MakeAdmin S}
-      'div'(h1("Designate Admin")
+      'div'(h1("Designate an Admin")
 	    {UL
 	     {Map {S.model allNonAdmins(result:$)}
-	      fun {$ user(login:L)}
+	      fun {$ user(login:L ...)}
 		 a("User: "#L
 		   href:fun {$ S}
 			   {S.model makeAdmin(L)}
