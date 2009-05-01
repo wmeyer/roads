@@ -202,10 +202,13 @@ define
       [] kill then
 	 %% log
 	 {Plugin.shutDownPlugins Config}
-	 skip
+      [] E=system(os(os "bind" ...) ...) then %% probably multiple instances
+	 {Plugin.shutDownPlugins Config}
+	 {Config.logError "Problems with bind. Are you trying to start multiple instances? Adjust the port number."}
+	 {Config.logException E}
       [] E then
 	 try
-	    {Config.logError E}
+	    {Config.logException E}
 	 catch _ then skip end
 	 {Server Thread Config}
       end

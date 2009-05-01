@@ -4,7 +4,16 @@ When an URL is requested, Roads calls the associated function with a session obj
 
 The session object provides access to different types of session state. In this section, we will explain which type of state is useful in which situation and how to use the session object to read and change session values.
 
+h3. Contents
+
+* "Session-specific private state":#ssps
+* "Session-specific shared state":#ssss
+* "Parameter Values":#pv
+* "Temporary Values":#tv
+* "Other Uses of the Session Object":#other
+
 h3. Session-specific private state
+<a name="ssps"></a>
 
 Private state is represented by a dictionary with values than can be accessed only in subsequent function calls.The dictionary is copied before any function call, so changes never affect previously visited sites.
 This is useful for sequence-specific state. Imagine a search function with multiple result pages. You would store the search term in the private dictionary. When the user navigates to the next result page, you use the stored search term to run the search process (with an increased offset value). At the same time, the user might have opened another tab with a different search task. Because the search term is stored in the private dictionary, it will not disturb the other task. 
@@ -43,6 +52,7 @@ in
 If you open one of the <code>++</code> or <code>--</code> links in a new tab, you basically create a new counter. You will find that it operates independently from the other tabs.
 
 h3. Session-specific shared state
+<a name="ssss"></a>
 
 Shared values are available anywhere in a session, regardless of how we got to a specific page. Typical candidates for this category are the user login name or the contents of a shopping cart.
 
@@ -68,6 +78,7 @@ Note that Roads does not provide a built-in user authentication system. The use 
 
 
 h3. Parameter Values
+<a name="pv"></a>
 
 POST and GET parameters can be accessed under their name, i.e. the identifier that was specified with the <code>name</code> attribute of the <code>input</code> tag. This is an alternative to the usage of the Roads-specific <code>bind</code> attribute.
 
@@ -108,6 +119,7 @@ in
 
 
 h3. Temporary Values
+<a name="tv"></a>
 
 Temporary state can be useful to pass values to the <code>After</code> function. The temporary state dictionary is cleared after every request.
 
@@ -136,6 +148,7 @@ end
 </code></pre>
 
 h3. Other Uses of the Session Object
+<a name="other"></a>
 
 The session object also provides access to the original HTTP request object.
 For example, <code>Session.request.headers</code> is a list of all HTTP headers.
@@ -146,7 +159,7 @@ Other features of the request object include:
 * <code>originalURI:</code>: the unparsed URL as a string 
 * <code>httpVersion:</code>: the HTTP version as an integer, e.g. <code>11</code>
 
-Additionally, the session object allows access to application-specific resources (see chapter [[Application Deployment]]) and contains procedures for [[Controlling URL Expiration]].
+Additionally, the session object allows access to application-specific resources (see chapter [[Application Development]]), contains procedures for controlling URL Expiration and logging facilities (see chapter [[Other Features]]).
 
 Previous: [[Home]] &nbsp;&nbsp; Next: [[Security]]
 

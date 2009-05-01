@@ -80,7 +80,7 @@ h3. Returning non-HTML from user functions
 <a name="rnh"></a>
 
 In all examples so long, we returned records that represent HTML. But you may also return:
-* virtual strings; these will be served as HTML (wrt. the HTTP content type header)
+* virtual strings; these will be served as HTML (wrt. the HTTP content type header) with charset IS0 8859-1, which is the default charset both for HTTP and Mozart/Oz.
 * <code>redirect(Code URL)</code> or <code>redirect(Code url(...))</code>; creates a redirect response; for example <code>redirect(303 url(function:makeAdmin))</code>
 * a <code>response(...)</code> record; in this case, Roads will only add cookies and otherwise send the response unmodified to the client.
 
@@ -92,7 +92,7 @@ h3. JavaScript
 * But you may also write JavaScript code as strings in Oz code.
 * There is a package "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip which offers some additional features:
 
-<b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. So Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint.
+<b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint. Therefore, on non-Windows, Java must be installed.
 
 Example (<code>/roads/examples/Ajax.oz</code>):
 <pre></code>functor Ajax

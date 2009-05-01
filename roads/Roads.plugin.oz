@@ -134,6 +134,7 @@ define
 			  after:{CondSelect AppModule after fun {$ _ X} X end}
 			  forkedFunctions:{CondSelect AppModule forkedFunctions true}
 			  pagesExpireAfter:{CondSelect AppModule pagesExpireAfter 0}
+			  useTokenInLinks:{CondSelect AppModule useTokenInLinks true}
 			  logger:AppLogger
 			 )
 	   end
@@ -562,18 +563,24 @@ define
 			     nil fun {$ F} {@Validator with(F $)} end
 			     Val}
 		  [] href then
-		     LinkSecret = {Base62.to {SecretGenerator}}
-		  in
-		     href#{ProcessTargetAttribute App Functr
-			   Sess CurrentSpace PathComponents
-			   "?sid="#LinkSecret
-			   fun {$ F}
-			      fun {$ S}
-				 {S.validateParameters [sid(validate:is(LinkSecret))]}
-				 {F S}
+		     if App.useTokenInLinks then
+			LinkSecret = {Base62.to {SecretGenerator}}
+		     in
+			href#{ProcessTargetAttribute App Functr
+			      Sess CurrentSpace PathComponents
+			      "?sid="#LinkSecret
+			      fun {$ F}
+				 fun {$ S}
+				    {S.validateParameters [sid(validate:is(LinkSecret))]}
+				    {F S}
+				 end
 			      end
-			   end
-			   Val}
+			      Val}
+		     else
+			href#{ProcessTargetAttribute App Functr
+			      Sess CurrentSpace PathComponents
+			      nil fun {$ F} F end Val}
+		     end
 		  [] bind andthen {Label Parent} == input then
 		     {CallValidator bind Parent}
 		  [] bind then raise roads(bindAttributeOutsideOfInput) end

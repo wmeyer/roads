@@ -81,6 +81,7 @@ Simply export the option and set the value in the functor body.
 * <code>name</code>: application name as used in app log messages; default: app
 * <code>logLevel</code>: log level for application loging; default: trace
 * <code>pagesExpireAfter</code>: seconds from now that pages will expire; goes into the "Expires" HTTP header; default: 0
+* <code>useTokenInLinks</code>: if set to false, links to procedure values will be shorter, but also slightly vulnerable to very determined CSRF attacks (the attacker still has to guess or brute-force a user-specific 32-bit value); default: true
 * <code>forkedFunctions</code>: bool; whether subordinate spaces are used; for advanced users; setting this to false makes "bind" attributes pretty much unusable but allows side effects directly in user functions. Can be overridden for specific functions by using <code>fork(...)</code> in action handlers and hrefs.
 <br>
 <br>

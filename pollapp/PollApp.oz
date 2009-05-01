@@ -7,6 +7,7 @@ export
    AppName
    Functors
    PagesExpireAfter
+   UseTokenInLinks
    Init
    ShutDown
    Before
@@ -17,8 +18,9 @@ define
    Functors = unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
 		   'admin':'x-ozlib://wmeyer/pollapp/Admin.ozf'
 		  )
-   PagesExpireAfter=0
-
+   PagesExpireAfter = 0
+   UseTokenInLinks = true
+   
    fun {Init}
       session(model:{Model.new})
    end
