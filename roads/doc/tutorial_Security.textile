@@ -161,9 +161,13 @@ This type of '"attack works by including a link or script in a page that accesse
 When a form is submitted in Roads, a generated URL is requested that leads to an internal function which validates inputs, binds variables and calls a application-specific handler function . This URL contains a random id which can usually not be guessed.
 Additionally, all Roads forms (with a function value as the action handler) contain a hidden element with a one-time secret token. If a request with an invalid token is received, validation will fail.
 
+The same is true for links with procedure values as <code>href</code> attributes.
+
 bq. <b>Therefore, with normal usage patterns, CSRF attacks are not possible with Roads applications.</b>
 
 However, if you write a POST/GET handler function and explicitly register it under a URL to make it bookmarkable, the function will be reachable from the outside and CSRF attacks are possible. You should therefore only do this with functions which are free of side effects and therefore uninteresting for attackers.
 
 
 Previous: [[The Session Object]] &nbsp;&nbsp; Next: [[Application Deployment]]
+
+"Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net

@@ -32,7 +32,6 @@ end
 
 in
 
-{Roads.setOption sessionDuration 5000}
 {Roads.registerFunctor '' Pages}
 {Roads.run}
 

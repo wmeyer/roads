@@ -500,9 +500,9 @@ define
 	      else "?"#
 		 {Intercalate
 		  {Map {Record.toListInd Params}
-		   fun {$ P#V} {URLEncode P}#"="#{URLEncode V} end
+		   fun {$ P#V} {VirtualString.toString {URLEncode P}#"="#{URLEncode V}} end
 		  }
-		  "&"
+		  [&&]
 		 }
 	      end
 	   end
@@ -559,12 +559,20 @@ define
 		  case Name of action andthen {Label Parent} == form then
 		     action#{ProcessTargetAttribute App Functr
 			     Sess CurrentSpace PathComponents
-			     fun {$ F} {@Validator with(F $)} end
+			     nil fun {$ F} {@Validator with(F $)} end
 			     Val}
 		  [] href then
+		     LinkSecret = {Base62.to {SecretGenerator}}
+		  in
 		     href#{ProcessTargetAttribute App Functr
 			   Sess CurrentSpace PathComponents
-			   fun {$ F} F end
+			   "?sid="#LinkSecret
+			   fun {$ F}
+			      fun {$ S}
+				 {S.validateParameters [sid(validate:is(LinkSecret))]}
+				 {F S}
+			      end
+			   end
 			   Val}
 		  [] bind andthen {Label Parent} == input then
 		     {CallValidator bind Parent}
@@ -581,7 +589,7 @@ define
 
 	   fun {ProcessTargetAttribute App Functr
 		Sess CurrentSpace PathComponents
-		Wrapper Val}
+		Query Wrapper Val}
 	      fun {NewClosure Fun DoFork}
 		 {CreateNewClosure Sess PathComponents.basePath {Wrapper Fun}
 		  Functr App CurrentSpace DoFork}
@@ -589,9 +597,9 @@ define
 	   in
 	      case Val of url(...) then {MakeURL PathComponents Val}
 	      [] fork(V) then
-		 {NewClosure V true}
+		 {NewClosure V true}#Query
 	      elseif {Procedure.is Val} then
-		 {NewClosure Val App.forkedFunctions}
+		 {NewClosure Val App.forkedFunctions}#Query
 	      else Val
 	      end
 	   end
