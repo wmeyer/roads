@@ -17,6 +17,8 @@ PR.registerLangHandler(
 	 ],
 	[
          [PR.PR_COMMENT,     /^%.*/],
-         [PR.PR_KEYWORD,     /^(?:local|\[\]|\$|skip|proc|fun|case|if|cond|functor|dis|choice|not|thread|try|raise|lock|for|from|prop|attr|feat|in|then|else|of|elseof|elsecase|elseif|catch|finally|with|require|prepare|import|export|define|declare|do|end)\W/],
+         [PR.PR_KEYWORD,     /^(?:local|\[\]|\$|#|skip|proc|fun|case|if|cond|functor|dis|choice|not|thread|try|raise|lock|for|from|prop|attr|feat|in|then|else|of|elseof|elsecase|elseif|catch|finally|with|require|prepare|import|export|define|declare|do|end)\W/, null],
+         [PR.PR_PLAIN, /^[a-z]\w*/],
+	 [PR.PR_TYPE, /^[A-Z]\w*/],
 	 ]),
     ['oz']);
