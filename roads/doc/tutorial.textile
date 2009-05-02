@@ -1,3 +1,14 @@
+<notextile>
+<link href="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" >
+$(document).ready(function() {
+   prettyPrint();
+});
+</script>
+</notextile>
+
 h1. The Roads Web Application Framework
 
 Welcome to the official Roads tutorial. Roads is a web application framework for "Mozart/Oz":http://www.mozart-oz.org.
@@ -30,7 +41,8 @@ h3. Installing and Testing Roads
 Next, download "Roads":http://github.com/wmeyer/roads/downloads/roads-0.2.0.zip, unpack it and run <code>build.sh</code> in the <code>roads</code> directory.
 
 Now, lets try a "Hello, world"-application by starting the Emacs-based Mozart OPI and copy-pasting the following code:
-<pre><code>declare
+
+<pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}  %% link to Roads
 
    fun {HelloWorld Session}  %% 'Session': unused in this example
@@ -60,7 +72,7 @@ bq. Write a program that causes the url <code>said</code> (e.g. <code>http://loc
 
 A possible solution to this challenge in Roads looks like this:
 
-<pre><code>declare
+<pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
    fun {Said Session}
@@ -90,7 +102,7 @@ Most of the code in the <code>Said</code> function is just standard HTML, encode
 # <code>href</code> and <code>action</code> attributes can take function values instead of URLs. These are automatically converted to unique URLs. When these URLs are requested, the framework will make sure that the right function is called in the right context.
 
 The generated HTML for the outer function looks like this:
-<pre><code>
+<pre class="prettyprint"><code>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
  <body>
@@ -120,7 +132,7 @@ There is one real problem with this example, though. The inner functions do not 
 
 To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document:
 
-<pre><code>declare
+<pre class="prettyprint lang-oz"><code>declare
 [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
 functor Pages
@@ -169,4 +181,3 @@ h2. &nbsp;
 Next: [[The Session Object]]
 
 "Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net
-
