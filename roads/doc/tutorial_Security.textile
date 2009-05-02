@@ -4,19 +4,19 @@ This chapter is about common security threats to web applications and how Roads 
 
 bq. <b>Roads does currently not support the HTTPS protocol and is therefore not suited for high-security applications at this point of its developement.</b>
 
-<br>
 
-h3. Contents
+h2. Contents
 
 * "Cross-site Scripting (XSS)":#xss
-* "Session Hijacking":#sh
 ** "Escaping":#escaping
 ** "Input Validation for Form Submissions":#inputval
 ** "Input Validation with public GET handlers":#inputval2
+* "Session Hijacking":#sh
 * "Cross-site Request Forgery (CSRF)":#csrf
 
-h3. Cross-site Scripting (XSS)
 <a name="xss"></a>
+
+h2. Cross-site Scripting (XSS)
 
 "This vulnerability":http://en.wikipedia.org/wiki/Cross-site_scripting is about harmful code injected into a web app by malicious users with the intention to be executed in web pages viewed by other users. The most important rule for mitigation is to
 
@@ -24,8 +24,9 @@ bq. <b>NEVER TRUST USER INPUT!</b>
 
 Roads supports this necessary paranoia by (semi-)automatically HTML-escaping user input and by providing a mechanism for input validation.
 
-h4. Escaping
 <a name="escaping"></a>
+
+h3. Escaping
 
 If you revisit the "Arc Challenge" example of the [[Home|first chapter]] and enter something like <code><b>bold text</b></code>, you will find that the text will _not_ appear bold in the result page. Instead, the literal HTML code will be shown. However, it is still possible to access the unescaped input. How is this implemented?
 POST/GET parameters are presented to the application code as two-element record values. The above input looks like this to the application:
@@ -36,8 +37,9 @@ Note that Roads does currently not support automatic CSS, Javascript or URL esca
 
 If you use a database layer vulnerable to SQL injection, you need to sanitize the user input manually, too.
 
-h4. Input Validation for Form Submissions
 <a name="inputval"></a>
+
+h3. Input Validation for Form Submissions
 
 If all input is properly escaped, input validation is strictly speaking not necessary to prevent XSS attacks. However, it is very useful to enforce other types of constraints on input data.
 
@@ -47,7 +49,7 @@ To validate input values from form submissions, we can specify a function for ev
 * <code>'false'("Custom error message")</code> if the value is not valid and we want  to provide an error message, or
 * <code>'false'(AltFunction)</code> if the value is not valid and we want to execute the function <code>AltFunction</code> instead of the <code>action</code> function.
 <br>
-<br>
+
 
 h4. Example (fragment)
 
@@ -76,7 +78,7 @@ Some validation requirements are very common. Instead of a validation function, 
 * <code>not_one_of(Val1 Val2 ... ValN)</code> to accept all but a number of constant values.
 * <code>regex("RegularExpression")</code> to validate a parameter with a "regular expression":http://www.mozart-oz.org/home/doc/contrib/node1.html.
 <br>
-<br>
+
 
 h4. Example (fragment)
 
@@ -95,8 +97,9 @@ To restrict the length of the user name and the password in a login form, we cou
 )
 </code></pre>
 
-h4. Input Validation with public GET handlers
 <a name="inputval2"></a>
+
+h3. Input Validation with public GET handlers
 
 It is possible to explicitly register GET handler functions under a URL. This is useful to make the result of a GET request bookmarkable for the user.
 
@@ -150,10 +153,11 @@ The <code>HandleSaid</code> function expects exactly one GET parameter with its 
 
 Note that we specify the record value <code>url(function:handleSaid)</code> for the <code>action</code> attribute. We could have written <code>"/handleSaid"</code> instead. However, if we ever change the (currently empty) path of the functor, we have to manually adjust the path for <code>action</code>. By using <code>url(...)</code>, we automatically get a URL relativ to the current functor.
 
-<br>
 
-h3. Session Hijacking
+
 <a name="sh"></a>
+
+h2. Session Hijacking
 
 "Session hijacking":http://en.wikipedia.org/wiki/Session_hijacking is a technique where an attacker tries to find out the session id which is used to identify a user to a web application, and uses this id to execute requests in the name of the user.
 
@@ -166,10 +170,10 @@ It is possible for an application to request a new session id for the current se
 It should be noted that these measures are <b>not sufficient</b> to prevent session hijacking completely. Roads does currently not support the HTTPS protocol, which would be necessary to prevent attacks by packet sniffing. With packet sniffing, it is possible to steal both session ids and credentials used during the login process.
 <br>
 
-<br>
 
-h3. Cross-site Request Forgery (CSRF)
 <a name="csrf"></a>
+
+h2. Cross-site Request Forgery (CSRF)
 
 This type of '"attack works by including a link or script in a page that accesses a site to which the user is known (or is supposed) to have authenticated":http://en.wikipedia.org/wiki/Cross-site_request_forgery'.
 
@@ -182,6 +186,7 @@ bq. <b>Therefore, with normal usage patterns, CSRF attacks are not possible with
 
 However, if you write a POST/GET handler function and explicitly register it under a URL to make it bookmarkable, the function will be reachable from the outside and CSRF attacks are possible. You should therefore only do this with functions which are free of side effects and therefore uninteresting for attackers.
 
+h2. &nbsp;
 
 Previous: [[The Session Object]] &nbsp;&nbsp; Next: [[Application Deployment]]
 

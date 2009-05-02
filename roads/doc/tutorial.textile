@@ -1,35 +1,35 @@
-h2. The Roads Web Application Framework
+h1. The Roads Web Application Framework
 
 Welcome to the official Roads tutorial. Roads is a web application framework for "Mozart/Oz":http://www.mozart-oz.org.
 
-h3. Contents
+h2. Contents
 
-# "Getting Started":#gettingstarted
-# "The Arc Challenge":#arcchallenge
-# [[The Session Object]]
-# [[Security]]
-# [[Application Development]]
-# [[Other Features]]
-# [[Future Development]]
+* "Getting Started":#gettingstarted
+* "The Arc Challenge":#arcchallenge
+* [[The Session Object]]
+* [[Security]]
+* [[Application Development]]
+* [[Other Features]]
+* [[Future Development]]
 
-h3. Getting Started
 <a name="gettingstarted"></a>
+
+h2. Getting Started
 
 We expect the reader to be familiar with basic HTML and the fundamentals of the Oz programming language.
 Roads was developed using "Mozart 1.4.0":http://www.mozart-oz.org/download/view.cgi?action=default&version=1.4.0. It might also work with older versions.
 
-h4. Installing the web server: Sawhorse
+h3. Installing the web server: Sawhorse
 
-Download the "Sawhorse":http://example.org web server and unpack it. Alternatively, <code>clone</code> and <code>pull</code> everything from the GIT repository. Build the web server with <code>build.sh</code>.
-<b>On Windows, you will need Cygwin with GCC installed.</b>
+Download the "Sawhorse":http://github.com/wmeyer/roads/downloads/sawhorse-0.2.0.zip web server and unpack it. Alternatively, clone the whole repository <code>git clone git://github.com/wmeyer/roads.git</code>.<br>
+Build the web server with <code>build.sh</code> in the <code>sawhorse</code> directory. <b>You will need GCC installed. On Windows, you need Cygwin and GCC installed.</b><br>
 Sawhorse is basically a port of the "Haskell Web Server":http://darcs.haskell.org/hws/ to Oz, extended with a plugin system. Sawhorse is currently the only web server supported by Roads.
 
-h4. Installing and Testing Roads
+h3. Installing and Testing Roads
 
-Next, download "Roads":http://example.com, unpack it and run <code>build.sh</code>.
+Next, download "Roads":http://github.com/wmeyer/roads/downloads/roads-0.2.0.zip, unpack it and run <code>build.sh</code> in the <code>roads</code> directory.
 
 Now, lets try a "Hello, world"-application by starting the Emacs-based Mozart OPI and copy-pasting the following code:
-
 <pre><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}  %% link to Roads
 
@@ -42,16 +42,17 @@ in
    {Roads.registerFunction hello HelloWorld}
    {Roads.run}
 </code></pre>
+
 Execute the code in Emacs (menu Oz->Feed Buffer) and navigate to "http://localhost:8080/hello":http://localhost:8080/hello in your web browser.
-You can stop the application (and the web server) by feeding the line
-<pre><code>{Roads.shutDown}</code></pre> or by halting Oz with <code>C-. h</code>. 
+<b>You can stop the application (and the web server) by feeding the line <code>{Roads.shutDown}</code> or by halting Oz with <code>C-. h</code></b>.
 
 In case of problems, take a look at the <code>*Oz Emulator*</code> buffer, which by default receives Sawhorse and Roads log messages.
 
-This simple example just returns a "record":http://www.mozart-oz.org/home/doc/tutorial/node3.html#label19 value which represents a minimalistic, static HTML page. Let’s continue with a more interesting example.
+This simple example just returns a "record":http://www.mozart-oz.org/home/doc/tutorial/node3.html#label19 value which represents a minimalistic, static HTML page. Let's continue with a more interesting example.
 
-h3. The Arc Challenge
 <a name="arcchallenge"></a>
+
+h2. The Arc Challenge
 
 In Februar 2008, Paul Graham proposed The Arc Challenge:
 
@@ -65,17 +66,19 @@ A possible solution to this challenge in Roads looks like this:
    fun {Said Session}
       Foo  %% declares a local variable "Foo"
    in
-      form(input(type:text bind:Foo)
-           input(type:submit)
-           method:post
-           action:fun {$ _}  %% an anonymous function which takes one unused argument
-                     p(a("click here" 
-                         href:fun {$ _}
-                                 p("you said: "#Foo)  %% '#' concatenates strings
-                              end
-                      ))
-                  end
-          )
+      html(
+        body(
+          form(input(type:text bind:Foo)
+               input(type:submit)
+               method:post
+               action:fun {$ _}
+                         p(a("click here"
+                             href:fun {$ _}
+                                     p("you said: "#Foo)
+                                  end
+                            ))
+                      end
+            )))
    end
 in
    {Roads.registerFunction said Said}
@@ -102,11 +105,16 @@ The generated HTML for the outer function looks like this:
 
 By using anonymous functions and exploiting lexical scoping, we are able to access the <code>Foo</code> variable and embed the user-entered text into our output.
 
-What happens when we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to different values. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in chapter [[Application Development]].
+<div style="margin-left:30px;padding:10px;background-color:#f8f8f8">
+What happens when we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to a different value. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in chapter [[Application Development]].<br>
 The bottom line is that this function will behave as expected. Every invocation of the innermost nested function will have its own, independent value for <code>Foo</code>. Consequent or concurrent submission will never accidentally interact with each other.<br>
-The <code>bind</code> attribute is not merely a matter of convenience. It is also essential to make fragments of HTML forms composable, as discussed in chapter [[Other Features]].
+</div>
 
-h4. Grouping Functions in Functors
+The <code>bind</code> attribute is not merely a matter of convenience. It is also essential to make fragments of HTML forms composable, as discussed in chapter [[Other Features]].
+<br>
+
+
+h3. Grouping Functions in Functors
 
 There is one real problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a simpler way to share code between multiple functions.
 
@@ -155,6 +163,8 @@ We are registering the functor using the empty "atom":http://www.mozart-oz.org/h
 Instead of the literal functor value, we could also have specified the path to a compiled functor.
 
 You might have noticed that all HTML-generating functions take one argument: the session object. We did not use it so far, but in the next section you will see why it is useful.
+
+h2. &nbsp;
 
 Next: [[The Session Object]]
 

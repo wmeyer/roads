@@ -1,15 +1,18 @@
-h2. Future Development
+h1. Future Development
 
 Features planned for future Roads releases:
 
-* Caching (fragment caching; page caching for pages which are suitable)
+* Caching (fragment caching; page caching for pages without generated urls)
 * A plugin system which will allow:
 ** URL rewriting
 ** custom tags
 ** better support for non-HTML
-* Automatic usage of multiple processors / multiple machines
-* Making Roads work with other webservers / https
+* A component system which manages issues that are global to a page (i.e. JavaScript dependencies).
+* Deploy on multiple processors / multiple machines.
+* Making Roads work with other webservers / https.
 
+
+h2. &nbsp;
 
 Previous: [[Other Features]]
 

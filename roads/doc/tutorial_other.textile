@@ -1,10 +1,10 @@
-h2. Other Features
+h1. Other Features
 
 <b>Draft version!</b>
 
 Roads features which have not been discussed in other chapters.
 
-h3. Contents
+h2. Contents
 
 * "Sawhorse Configuration":#sawhorse
 * "Composable Form Parts":#cfp
@@ -19,8 +19,9 @@ h3. Contents
 * "Logging":#logging
 
 
-h3. Sawhorse Configuration
 <a name="sawhorse"></a>
+
+h2. Sawhorse Configuration
 
 * How to configure Roads' webserver.
 * Look at <code>sawhorse/server/Configuration.oz</code>:
@@ -50,14 +51,15 @@ Every option can be set like this: <code>{Roads.setSawhorseOption port 80}</code
 You may also change the code directly and recompile if you want different defaults.
 
 
-h3. Composable Form Parts
 <a name="cfp"></a>
+
+h2. Composable Form Parts
 
 - thanks to bind and validate, like formlets
 
-
-h3. Making Requests Bookmarkable
 <a name="mrb"></a>
+
+h2. Making Requests Bookmarkable
 
 * If you use function values for <code>href</code> or <code>action</code> attributes, the resulting link will not be bookmarkable. It is only valid for the current user and only during the current session.
 * To make bookmarkable URLs, you need to
@@ -75,9 +77,9 @@ h3. Making Requests Bookmarkable
 # <code>url(function:makeAdmin params:unit(id:"v%al"))</code>: <code><current application>/<current functor>/makeAdmin?id=v%25al</code> (param values are percent-encoded)
 
 
-
-h3. Returning non-HTML from user functions
 <a name="rnh"></a>
+
+h2. Returning non-HTML from user functions
 
 In all examples so long, we returned records that represent HTML. But you may also return:
 * virtual strings; these will be served as HTML (wrt. the HTTP content type header) with charset IS0 8859-1, which is the default charset both for HTTP and Mozart/Oz.
@@ -85,8 +87,9 @@ In all examples so long, we returned records that represent HTML. But you may al
 * a <code>response(...)</code> record; in this case, Roads will only add cookies and otherwise send the response unmodified to the client.
 
 
-h3. JavaScript
 <a name="js"></a>
+
+h2. JavaScript
 
 * The best approach is probably to serve JavaScript code as separate files which are referenced in the HTML code.
 * But you may also write JavaScript code as strings in Oz code.
@@ -187,18 +190,21 @@ Writing JavaScript like this might be useful if you construct the code programma
 </code></pre>
 
 
-h3. JSON
 <a name="json"></a>
 
-h3. Ajax
+h2. JSON
+
 <a name="ajax"></a>
+
+h2. Ajax
 
 * no special support for Ajax
 * but also no obstacles if you want to use it
 * Simple example: <code>roads/examples/Ajax.oz</code>, "http://localhost:8080/select":http://localhost:8080/select, example needs "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip installed
 
-h3. CSS
 <a name="css"></a>
+
+h2. CSS
 
 CSS code can be represented by Oz records and embedded in HTML. Example:
 <pre><code> style(type:"text/css"
@@ -211,8 +217,9 @@ CSS code can be represented by Oz records and embedded in HTML. Example:
 Take a look at <code>sawhorse/common/Css.oz</code> to find out more about the syntax.
 
 
-h3. Reading and Setting Cookies
 <a name="cookies"></a>
+
+h2. Reading and Setting Cookies
 
 * <code>{Session.hasCookie Key}</code>: check whether a certain cookie was sent with the current request
 * <code>{Session.getCookie Key}</code>: get the value of a cookie as a string
@@ -220,8 +227,9 @@ h3. Reading and Setting Cookies
 * <code>{Session.setCookie Key Cookie}</code>: set a cookie to be send with the current response. "Cookie" may simply be a (virtual) string value. In this case, the cookie will have a  default path that limits it to the current application. Cookie may also be a value like <code>cookie(value:"String" path:"/" httpOnly:unit otherAttribute:"foobar")</code>.
 
 
-h3. Controlling URL Expiration
 <a name="cue"></a>
+
+h2. Controlling URL Expiration
 
 * By default, all URLs are valid for the duration of a session (except for bookmarkable URLs).
 * It is possible to expire URLs explicitly after a defined period of time or after a period of inactivity.
@@ -230,13 +238,16 @@ h3. Controlling URL Expiration
 * <code>C = {Session.createContext}</code>: starts a context. You can explicitly expire all links collected in that context with <code>{C expire}</code>.
 
 
-h3. Logging 
 <a name="logging"></a>
+
+h2. Logging 
 
 Functions <code>Session.logTrace</code> and <code>Session.logError</code> can be used to write log messages in the error log file (Sawhorse option <code>errorLogFile</code>). By default, these messages go to <code>stdout</code>.
 
 Messages are filtered by the application-level option <code>logLevel</code>.
 
+
+h2. &nbsp;
 
 Previous: [[Application Development]] &nbsp;&nbsp; Next: [[Future Development]]
 

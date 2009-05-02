@@ -1,15 +1,32 @@
-h2. Application Development
+h1. Application Development
 
 Up to now, we have only dealt with small examples which contained one or two functions. Real applications typically consist of a number of modules. We will show how to structure such applications.<br>
 Real applications also distinguish between a _model_ which contains the application data and logic, and one or more _views_ which present the data to the user. The code in the <code>action</code> handlers, <code>bind</code> procedures and <code>validate</code> functions can be considered part of the _controller_: the glue code which handles user input and typically calls functions of the model layer. We will present two approaches how to separate model and views with Roads.<br>
 For long running applications, it can be important to be able to update the code without any service interruption. This is very easy to implement with Roads.
 
 
-h3. Application Configuration
+h2. Contents
+
+* "Application Configuration":#conf
+** "Installation of the Example Application":#install
+** "Init, OnRestart and ShutDown":#init
+** "Global options":#global
+** "Application-level options":#app
+** "Before and After":#before
+* "Standalone applications (outside of the OPI)":#standalone
+* "Hot Code Swapping":#swap
+* "Calling the Model":#model
+* "Conclusion":#conclusion
+
+<a name="conf"></a>
+
+h2. Application Configuration
 
 As an example for this chapter, we introduce a simple poll application. This application has two types of users: administrators and normal users. Both normal users and admins may vote on polls. But only admins can create and delete polls and designate new admins.
 
-h4. Installation
+<a name="install"></a>
+
+h3. Installation of the Example Application
 
 If you did not clone the complete Git-repository in the first chapter, you need to download and unpack two packages to try out the example application:
 
@@ -41,8 +58,9 @@ The <code>ShowPoll</code> functor implements voting. Its functions are available
 
 h2. From here on, the documentation consists only of a rough draft!
 
+<a name="init"></a>
 
-h4. Init, OnRestart and ShutDown
+h3. Init, OnRestart and ShutDown
 
 <code>Init</code>: optional application function to initialize an application; although you can of course also do that with code executed in a functor at toplevel; returns a "session template", i.e. a session object with user-defined features. The data at these features will be available in every function of the application. Example:
 <pre><code>fun {Init}
@@ -63,7 +81,9 @@ end
 </code></pre>
 <br>
 
-h4. Global options
+<a name="global"></a>
+
+h3. Global options
 
 Set with <code>Roads.setOption</code>.
 
@@ -71,10 +91,10 @@ Set with <code>Roads.setOption</code>.
 * <code>expireSessionsOnRestart</code>: bool; default: false; whether existing session shall expire when the server is restarted; interacts with the Sawhorse option keepAliveTimeout, i.e. for existing socket connections, the session will not expire on restart
 * <code>sessionDuration</code>: milliseconds; how long are inactive sessions kept alive?; default: 1 hour
 <br>
-<br>
 
+<a name="app"></a>
 
-h4. Application-level options
+h3. Application-level options
 
 Simply export the option and set the value in the functor body.
 
@@ -84,10 +104,10 @@ Simply export the option and set the value in the functor body.
 * <code>useTokenInLinks</code>: if set to false, links to procedure values will be shorter, but also slightly vulnerable to very determined CSRF attacks (the attacker still has to guess or brute-force a user-specific 32-bit value); default: true
 * <code>forkedFunctions</code>: bool; whether subordinate spaces are used; for advanced users; setting this to false makes "bind" attributes pretty much unusable but allows side effects directly in user functions. Can be overridden for specific functions by using <code>fork(...)</code> in action handlers and hrefs.
 <br>
-<br>
 
+<a name="before"></a>
 
-h4. Before and After
+h3. Before and After
 
 Functions exported as <code>before</code> and <code>after</code>. Available both for applications and functors. If a functor does not define them, the application definitions are used.
 
@@ -138,8 +158,9 @@ Example (simplified from the example poll app):
    end
 </code></pre>
 
+<a name="standalone"></a>
 
-h3. Standalone applications (outside of the OPI)
+h2. Standalone applications (outside of the OPI)
 
 Example:
 <pre><code>functor
@@ -151,7 +172,9 @@ define
 end
 </code></pre>
 
-h3. Hot Code Swapping
+<a name="swap"></a>
+
+h2. Hot Code Swapping
 
 bq. On Windows, you need this patch: "http://lists.gforge.info.ucl.ac.be/pipermail/mozart-hackers/2008/003072.html":http://lists.gforge.info.ucl.ac.be/pipermail/mozart-hackers/2008/003072.html. Alternatively, you can replace your <code>Mozart\platform\win32-i486\emulator.dll</code> with the one available at "http://code.google.com/p/oz-code/downloads/detail?name=emulator.zip&can=2&q=":http://code.google.com/p/oz-code/downloads/detail?name=emulator.zip&can=2&q=.
 
@@ -165,7 +188,9 @@ To check that it works, delete the session cookie in your browser (<code>roadsSe
 Note that no <code>stdout</code> is available for an application that is started like this (internally uses an extra process). Therefore, Roads uses "sawhorse-logs/http-error.log" as the default log file in this case.
 
 
-h3. Calling the Model
+<a name="model"></a>
+
+h2. Calling the Model
 
 <ul>
 <li>User functions are always executed in subordinate spaces to make repeated execution of closures possible (in other words: nested user functions can read and set variables of their outer function(s) which is essential for <code>bind</code> attributes. Without subordinate spaces, every form using <code>bind</code> could only be submitted once which is against the spirit of web applications).
@@ -211,8 +236,9 @@ Extract:
       ...
 </code></pre>
 
+<a name="conclusion"></a>
 
-h3. Conclusion
+h2. Conclusion
 
 We recommend to study the poll application example in depth.
 The actual application interface is implemented in <code>ShowPolls.oz</code> and <code>Admin.oz</code>. The code in these functors creates dynamic HTML pages from model data in a quite simple and elegant way, using functional programming idioms and Oz' succinct record syntax.
@@ -236,6 +262,8 @@ The following function from <code>Admin.oz</code> creates an unordered list of n
            )
    end
 </code></pre>
+
+h2. &nbsp;
 
 Previous: [[Security]] &nbsp;&nbsp; Next: [[Other Features]]
 
