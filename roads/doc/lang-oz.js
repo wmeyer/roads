@@ -17,7 +17,7 @@ PR.registerLangHandler(
 	 ],
 	[
          [PR.PR_COMMENT, /^(?:%[^\r\n]*)/],
-         [PR.PR_KEYWORD,     /^(?:local|proc|fun|case|if|cond|functor|dis|choice|not|thread|try|raise|lock|for|from|prop|attr|feat|in|then|else|of|elseof|elsecase|elseif|catch|finally|with|require|prepare|import|export|define|declare|do|end|$)\b/],
+         [PR.PR_KEYWORD,     /^(?:local|proc|fun|case|if|cond|functor|dis|choice|not|thread|try|raise|lock|for|from|prop|attr|feat|in|then|else|of|elseof|elsecase|elseif|catch|finally|with|require|prepare|import|export|define|declare|do|end|\[\]|\u0024)\b/],
          // A number is a hex integer literal, a decimal real literal, or in
          // scientific notation.
          [PR.PR_PUNCTUATION,

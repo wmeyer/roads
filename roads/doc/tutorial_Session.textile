@@ -1,3 +1,14 @@
+<notextile>
+<link href="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/757706fcbefdba5dfd508a47f85a7c4c12b80b2b/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" >
+$(document).ready(function() {
+   prettyPrint();
+});
+</script>
+</notextile>
+
 h1. The Session Object
 
 When an URL is requested, Roads calls the associated function with a session object as its sole argument. Sessions are established and identified with a cookie (named "roadsSession").
@@ -31,7 +42,7 @@ h4. Interface
 
 h4. Example
 
-<pre><code>declare
+<pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
    fun {Counter Session}
@@ -70,7 +81,7 @@ h4. Interface
 
 h3. Example (fragment)
 
-<pre><code>case {Session.condGetShared user none}
+<pre class="prettyprint lang-oz"><code>case {Session.condGetShared user none}
 of none then "Permission denied."
 [] User then "Welcome "#User#"!"
 end
@@ -96,7 +107,7 @@ h3. Example
 
 An alternative implementation of the <code>Said</code> function of the previous section:
 
-<pre><code>declare
+<pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
    fun {AlternativeSaid _}
@@ -138,7 +149,7 @@ h3. Interface:
 
 h3. Example (fragment)
 
-<pre><code>fun {Hello Session}
+<pre class="prettyprint lang-oz"><code>fun {Hello Session}
   {Session.setTmp pageTitle "Hello world"}
   p("Hello world!")
 end
