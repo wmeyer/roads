@@ -1,8 +1,8 @@
 /* Pretty printing styles. Used with prettify.js. */
 
-.str { color: #080; }
-.kwd { color: #08A; }
-.com { color: #800; }
+.str { color: #bc8f8f; }
+.kwd { color: #A020F0; }
+.com { color: #b22222; }
 .typ { color: #606; }
 .lit { color: #066; }
 .pun { color: #660; }
