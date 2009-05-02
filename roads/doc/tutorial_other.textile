@@ -1,3 +1,13 @@
+<notextile>
+<link href="http://github.com/wmeyer/roads/raw/2dcdc7f8e5b2fb9d754170b614f60dd823099813/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/264d15b75f09bc23a9016189dd638b25d41025a3/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" >
+$(document).ready(function() {
+   prettyPrint();
+});
+</script></notextile>
+
 h1. Other Features
 
 <b>Draft version!</b>
@@ -26,7 +36,7 @@ h2. Sawhorse Configuration
 * How to configure Roads' webserver.
 * Look at <code>sawhorse/server/Configuration.oz</code>:
 
-<pre><code>   ...
+<pre class="prettyprint lang-oz"><code>   ...
    Config = config(port:8080
                    requestTimeout: 300
                    keepAliveTimeout: 15
@@ -98,7 +108,7 @@ h2. JavaScript
 <b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint. Therefore, on non-Windows, Java must be installed.
 
 Example (<code>/roads/examples/Ajax.oz</code>):
-<pre></code>functor Ajax
+<pre class="prettyprint lang-oz"><code>functor Ajax
 ...
 require
    Javascript at 'x-ozlib://wmeyer/javascript/Javascript.ozf'
@@ -124,7 +134,7 @@ define
 Note that we do the JavaScript check in the <code>prepare</code> section, so this will happen at compile time. If a problem is detected, compilation will abort with an error message.
 
 <b>Writing Javascript In Oz</b>: This feature is rather a gimmick than a really useful tool ;-) Anyway it looks like this (<code>/roads/examples/Ajax2.oz</code>):
-<pre></code>functor Ajax
+<pre class="prettyprint lang-oz"><code>functor Ajax
 export
    Select
    Info
@@ -155,7 +165,7 @@ It should be possible to figure out the syntax by comparing these two fragments.
 Writing JavaScript like this might be useful if you construct the code programmatically. But be warned: embedding user input in JavaScript code is extremely dangerous.
 
 <b>Embedding JavaScript in HTML</b>: Finally, you may embed the JavaScript-in-Oz code directly in the HTML structure (<code>/roads/examples/Ajax3.oz</code>):
-<pre><code>   fun {Select Session}
+<pre class="prettyprint lang-oz"><code>   fun {Select Session}
       html(
          head(
             title("Ajax example")
@@ -207,7 +217,7 @@ h2. Ajax
 h2. CSS
 
 CSS code can be represented by Oz records and embedded in HTML. Example:
-<pre><code> style(type:"text/css"
+<pre class="prettyprint lang-oz"><code> style(type:"text/css"
        css('div'#content
            'border-width':".2em"
            'border-style':solid

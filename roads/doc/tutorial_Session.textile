@@ -1,13 +1,12 @@
 <notextile>
-<link href="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<link href="http://github.com/wmeyer/roads/raw/2dcdc7f8e5b2fb9d754170b614f60dd823099813/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
 <script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
-<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/757706fcbefdba5dfd508a47f85a7c4c12b80b2b/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/264d15b75f09bc23a9016189dd638b25d41025a3/roads/doc/lang-oz.js"></script>
 <script type="text/javascript" >
 $(document).ready(function() {
    prettyPrint();
 });
-</script>
-</notextile>
+</script></notextile>
 
 h1. The Session Object
 
@@ -49,7 +48,7 @@ h4. Example
      Count = {Session.condGet count 0}
    in
      'div'(
-       h1("Counter: "#Count)
+       h1("Counter: " # Count)
        p(a("++" href:fun {$ S} {S.set count Count+1} {Counter S} end)
          "&nbsp;&nbsp;"
          a("--" href:fun {$ S} {S.set count Count-1} {Counter S} end)
@@ -83,7 +82,7 @@ h3. Example (fragment)
 
 <pre class="prettyprint lang-oz"><code>case {Session.condGetShared user none}
 of none then "Permission denied."
-[] User then "Welcome "#User#"!"
+[] User then "Welcome " # User # "!"
 end
 </code></pre>
 
@@ -120,7 +119,7 @@ An alternative implementation of the <code>Said</code> function of the previous 
 	      in
                 p(a("click here"
                     href:fun {$ _}
-                           p("you said: "#Foo)
+                           p("you said: " # Foo)
                          end
                 ))
               end

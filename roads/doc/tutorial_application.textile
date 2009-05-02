@@ -1,3 +1,13 @@
+<notextile>
+<link href="http://github.com/wmeyer/roads/raw/2dcdc7f8e5b2fb9d754170b614f60dd823099813/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/264d15b75f09bc23a9016189dd638b25d41025a3/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" >
+$(document).ready(function() {
+   prettyPrint();
+});
+</script></notextile>
+
 h1. Application Development
 
 Up to now, we have only dealt with small examples which contained one or two functions. Real applications typically consist of a number of modules. We will show how to structure such applications.<br>
@@ -38,13 +48,13 @@ Build both packages with <code>./build.sh</code> in their respective directories
 To start the application, feed <code>/pollapp/OPI.oz</code> in the Mozart OPI and go to "http://localhost:8080/poll":http://localhost:8080/poll.
 
 In <code>OPI.oz</code>, we see how an _application_ is registered, using the URL of the compiled functor which implements the application:
-<pre><code>{Roads.registerApplication poll 'x-ozlib://wmeyer/pollapp/PollApp.ozf'}</code></pre>
+<pre class="prettyprint lang-oz"><code>{Roads.registerApplication poll 'x-ozlib://wmeyer/pollapp/PollApp.ozf'}</code></pre>
 
 An application in Roads is a mapping from path elements to functors, extended by optional special purpose functions (for initialization and shutdown) and exported options. A defining characteristic for applications is that all functions of one application share the same session instances. It is possible to run multiple applications at the same time, but these applications will never share any session data.<br>
 If you use <code>registerFunction</code> or <code>registerFunctor</code>, all functions will belong to the same implicit default application.
 
 The application definition in <code>PollApp.oz</code> starts with the mentioned functor mapping and setting of an option:
-<pre><code>   Functors = unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
+<pre class="prettyprint lang-oz"><code>   Functors = unit('':'x-ozlib://wmeyer/pollapp/ShowPolls.ozf'
                    'admin':'x-ozlib://wmeyer/pollapp/Admin.ozf'
                   )
    PagesExpireAfter=0
@@ -63,19 +73,19 @@ h2. From here on, the documentation consists only of a rough draft!
 h3. Init, OnRestart and ShutDown
 
 <code>Init</code>: optional application function to initialize an application; although you can of course also do that with code executed in a functor at toplevel; returns a "session template", i.e. a session object with user-defined features. The data at these features will be available in every function of the application. Example:
-<pre><code>fun {Init}
+<pre class="prettyprint lang-oz"><code>fun {Init}
    session(model:{Model.new})
 end
 </code></pre>
 
 <code>OnRestart</code>: optional application function which is called when the server is restarted. Takes the original session template and returns an updated template. Example (not part of the actual example poll application):
-<pre><code>fun {OnRestart Session}
+<pre class="prettyprint lang-oz"><code>fun {OnRestart Session}
    session(model:{Model.updateFrom Session.model})
 end
 </code></pre>
 
 <code>ShutDown</code>: optional application function which is called when the server is shut down (i.e. when {Roads.shutDown} is called). Example:
-<pre><code>proc {ShutDown Session}
+<pre class="prettyprint lang-oz"><code>proc {ShutDown Session}
    {Session.model shutDown}
 end
 </code></pre>
@@ -114,7 +124,7 @@ Functions exported as <code>before</code> and <code>after</code>. Available both
 <code>Before</code> takes a session object and the user function that is about to be called. It returns the function that will actually be called. Useful for authentication.
 
 Example:
-<pre><code>   %% Authentication
+<pre class="prettyprint lang-oz"><code>   %% Authentication
    fun {Before Session Fun}
       IsLoggedIn = {Session.memberShared user}
       LoggingIn = {Session.condGet loginInProgress false}
@@ -129,7 +139,7 @@ Example:
 <code>After</code> takes a session object and the result of a user function (typically a HTML document or a fragment). It returns a postprocessed version of the user function result. Useful to add content that is common for all functions of an application or a functor.
 
 Example (simplified from the example poll app):
-<pre><code>   %% Add list of links for logged-in users
+<pre class="prettyprint lang-oz"><code>   %% Add list of links for logged-in users
    fun {After Session Doc}
       IsLoggedIn = {Session.memberShared user}
    in
@@ -148,7 +158,7 @@ Example (simplified from the example poll app):
 		     'div'(a("Admin" href:url('functor':admin function:''))
 			   a("View all polls"
 			     href:url('functor':'' function:showAll))
-			   a("Logout "#{Session.getShared user}.login
+			   a("Logout " # {Session.getShared user}.login
 			     href:Logout)
 			  )
 		    )
@@ -163,7 +173,7 @@ Example (simplified from the example poll app):
 h2. Standalone applications (outside of the OPI)
 
 Example:
-<pre><code>functor
+<pre class="prettyprint lang-oz"><code>functor
 import
    Roads at 'x-ozlib://wmeyer/roads/Roads.ozf'
 define
@@ -181,7 +191,7 @@ bq. On Windows, you need this patch: "http://lists.gforge.info.ucl.ac.be/piperma
 Just use <code>'x-ozlib://wmeyer/roads/TheRoads.ozf'</code> instead of <code>'x-ozlib://wmeyer/roads/Roads.ozf'</code>. If you start your application a second time, this will NOT try to create another server, but use the existing one and update the used application configuration and code for new sessions. Existing sessions will continue to use the old code (if not configured to expire on restart).
 
 To check that it works, delete the session cookie in your browser (<code>roadsSession</code>), or use
-<pre><code>{TheRoads.setSawhorseOption keepAliveTimeout 0}
+<pre class="prettyprint lang-oz"><code>{TheRoads.setSawhorseOption keepAliveTimeout 0}
 {TheRoads.setOption expireSessionsOnRestart true}
 </code></pre>
 
@@ -203,7 +213,7 @@ h2. Calling the Model
 <li>For an example usage, see <code>pollapp/Model.oz</code>.
 </ul>
 Extract:
-<pre><code>
+<pre class="prettyprint lang-oz"><code>
    ...
    fun {NewModel}
       {ActiveObject.new Model init}
@@ -244,13 +254,13 @@ We recommend to study the poll application example in depth.
 The actual application interface is implemented in <code>ShowPolls.oz</code> and <code>Admin.oz</code>. The code in these functors creates dynamic HTML pages from model data in a quite simple and elegant way, using functional programming idioms and Oz' succinct record syntax.
 
 The following function from <code>Admin.oz</code> creates an unordered list of non-admin users. Each user name is rendered as a link which - when clicked - makes the user an admin:
-<pre><code>
+<pre class="prettyprint lang-oz"><code>
    fun {MakeAdmin S}
       'div'(h1("Designate an Admin")
             {UL
              {Map {S.model allNonAdmins(result:$)}
               fun {$ user(login:L ...)}
-                 a("User: "#L
+                 a("User: " # L
                    href:fun {$ S}
                            {S.model makeAdmin(L)}
                            {MakeAdmin S}

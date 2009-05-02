@@ -1,4 +1,14 @@
-h2. Security
+<notextile>
+<link href="http://github.com/wmeyer/roads/raw/2dcdc7f8e5b2fb9d754170b614f60dd823099813/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/264d15b75f09bc23a9016189dd638b25d41025a3/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" >
+$(document).ready(function() {
+   prettyPrint();
+});
+</script></notextile>
+
+h1. Security
 
 This chapter is about common security threats to web applications and how Roads helps to prevent them. Roads does not totally avoid these threats, so as a developer you have to be familiar with them.
 
@@ -30,7 +40,7 @@ h3. Escaping
 
 If you revisit the "Arc Challenge" example of the [[Home|first chapter]] and enter something like <code><b>bold text</b></code>, you will find that the text will _not_ appear bold in the result page. Instead, the literal HTML code will be shown. However, it is still possible to access the unescaped input. How is this implemented?
 POST/GET parameters are presented to the application code as two-element record values. The above input looks like this to the application:
-<pre><code>externalInput(original:"<b>bold text</b>"
+<pre class="prettyprint lang-oz"><code>externalInput(original:"<b>bold text</b>"
               escaped:"&lt;b&gt;bold text&lt;&#x2F;b&gt;")</code></pre>If such a composite value is embedded in HTML code, Roads will automatically choose the escaped version. When sending data to the model layer, the developer has to choose which value to use. 
 
 Note that Roads does currently not support automatic CSS, Javascript or URL escaping. If you want to use user input within CSS code, scripts or URLs, you have to ensure escaping manually.
@@ -55,7 +65,7 @@ h4. Example (fragment)
 
 This functions lets the user enter a natural number and displays it back to them:
 
-<pre><code>fun {EnterInt Session}
+<pre class="prettyprint lang-oz"><code>fun {EnterInt Session}
   V
 in
   form(
@@ -63,7 +73,7 @@ in
           validate:fun {$ _ X} {All X Char.isDigit} end)
     input(type:submit)
     method:post
-    action:fun {$ _} "You entered: "#{String.toInt V.original} end
+    action:fun {$ _} "You entered: " # {String.toInt V.original} end
   )
 end
 </code></pre>
@@ -84,7 +94,7 @@ h4. Example (fragment)
 
 To restrict the length of the user name and the password in a login form, we could use the <code>length_in</code> validator:
 
-<pre><code>form(
+<pre class="prettyprint lang-oz"><code>form(
   table(
     tr(td(label('for':"Login" "Login: "))
        td(input(type:text id:"Login" bind:Login
@@ -108,7 +118,7 @@ As an example, let's look at a version of the Arc Challenge implementation with 
 
 h4. Example
 
-<pre><code>declare
+<pre class="prettyprint lang-oz"><code>declare
 [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
 functor Pages
@@ -131,7 +141,7 @@ define
    in
       p(a("click here"
           href:fun {$ _}
-                  p("you said: "#Foo)
+                  p("you said: " # Foo)
                end
        ))
    end

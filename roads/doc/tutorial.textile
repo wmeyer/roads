@@ -1,13 +1,12 @@
 <notextile>
-<link href="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
+<link href="http://github.com/wmeyer/roads/raw/2dcdc7f8e5b2fb9d754170b614f60dd823099813/roads/doc/prettify.css" type="text/css" rel="stylesheet" />
 <script type="text/javascript" src="http://github.com/wmeyer/roads/raw/79b0cffcfafa85096c3a48fca426f9aef7fccadd/roads/doc/prettify.js"></script>
-<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/757706fcbefdba5dfd508a47f85a7c4c12b80b2b/roads/doc/lang-oz.js"></script>
+<script type="text/javascript" src="http://github.com/wmeyer/roads/raw/264d15b75f09bc23a9016189dd638b25d41025a3/roads/doc/lang-oz.js"></script>
 <script type="text/javascript" >
 $(document).ready(function() {
    prettyPrint();
 });
-</script>
-</notextile>
+</script></notextile>
 
 h1. The Roads Web Application Framework
 
@@ -86,7 +85,7 @@ A possible solution to this challenge in Roads looks like this:
                action:fun {$ _}
                          p(a("click here"
                              href:fun {$ _}
-                                     p("you said: "#Foo)
+                                     p("you said: " # Foo)
                                   end
                             ))
                       end
@@ -149,7 +148,7 @@ define
            action:fun {$ _}
                      p(a("click here" 
                          href:fun {$ _}
-                                 p("you said: "#Foo)
+                                 p("you said: " # Foo)
                               end
                       ))
                   end
