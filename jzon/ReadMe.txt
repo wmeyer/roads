@@ -42,6 +42,6 @@ other numbers           int
 For example:
 { "emptyArray":[]       object('emptyArray':array
   "float":3.1415               'float':3.1415
-  "text":"abcd"                'text':"abcd2
+  "text":"abcd"                'text':"abcd"
   "numbers":[1,2,3]            'numbers':array(1 2 3)
 }                             )

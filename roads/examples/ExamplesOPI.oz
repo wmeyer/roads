@@ -1,5 +1,5 @@
 declare
-[Roads] = {Module.link ['x-ozlib://wmeyer/roads/TheRoads.ozf']}
+[Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 {Roads.registerFunctor examples 'x-ozlib://wmeyer/roads/examples/Examples.ozf'}
 {Roads.run}
 

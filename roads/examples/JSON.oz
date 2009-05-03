@@ -1,3 +1,7 @@
+%%
+%% Like Ajax2.oz, but uses JSON instead of HTML for the Ajax response.
+%% This example needs both "javascript-0.2.0" and "jzon-0.2.0" installed.
+%%
 declare
 [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 
@@ -49,7 +53,7 @@ define
 		      'border-color':"#900"))
 	    )
 	 body(
-	    h2("Simple Ajax Example")
+	    h2("Ajax with JSON Example")
 	    'div'(
 	       select(id:selector
 		      option(value:dummy "--- Choose one ---")
