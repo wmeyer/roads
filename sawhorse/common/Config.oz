@@ -4,5 +4,5 @@ export
    ServerVersion
 define
    ServerSoftware = "Sawhorse"
-   ServerVersion = "0.1"
+   ServerVersion = "0.2"
 end

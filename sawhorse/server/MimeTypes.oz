@@ -45,8 +45,8 @@ define
       fun {ParseMimeLine L}
 	 case {RegexGroups MimeRegex L}
 	 of group(1:Part1 2:Part2 3:Exts ...) then
-	    just(mimeType({ByteString.toString Part1}
-			  {ByteString.toString Part2})#
+	    just(mimeType({String.toAtom {ByteString.toString Part1}}
+			  {String.toAtom {ByteString.toString Part2}})#
 		 {Words {ByteString.toString Exts}})
 	 else nothing
 	 end

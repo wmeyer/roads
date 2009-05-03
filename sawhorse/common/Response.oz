@@ -138,8 +138,14 @@ define
 
    fun {ContentLengthHeader I} {Append "Content-Length: " {IntToString I}} end
 
-   fun {ContentTypeHeader mimeType(P1 P2)}
-      {VirtualString.toString "Content-Type: "#P1#"/"#P2}
+   fun {ContentTypeHeader M=mimeType(P1 P2 ...)}
+      {VirtualString.toString "Content-Type: "#P1#"/"#P2#
+       if P1 == text then
+	  "; charset="#{CondSelect M charset "ISO-8859-1"}
+       else
+	  nil
+       end
+      }
    end
 
    fun {LastModifiedHeader T} {Append "Last-Modified: " {FormatTime T}} end

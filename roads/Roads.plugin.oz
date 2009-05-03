@@ -135,6 +135,8 @@ define
 			  forkedFunctions:{CondSelect AppModule forkedFunctions true}
 			  pagesExpireAfter:{CondSelect AppModule pagesExpireAfter 0}
 			  useTokenInLinks:{CondSelect AppModule useTokenInLinks true}
+			  charset:{CondSelect AppModule charset "ISO-8859-1"}
+			  mimeType:{CondSelect AppModule mimeType mimeType(text html)}
 			  logger:AppLogger
 			 )
 	   end
@@ -434,7 +436,11 @@ define
 		 {OkResponse
 		  ServerConfig
 		  generated(Res)
-		  [{ContentTypeHeader mimeType(text html)}
+		  [{ContentTypeHeader
+		    {AdjoinAt {CondSelect Functr mimeType App.mimeType}
+		     charset {CondSelect Functr charset App.charset}
+		    }
+		   }
 		   {ExpiresHeader {OsTime.gmtime {OS.time}+App.pagesExpireAfter}}]
 		  withBody}
 	      end

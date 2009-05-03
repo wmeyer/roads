@@ -22,6 +22,7 @@ h2. Contents
 ** "Init, OnRestart and ShutDown":#init
 ** "Global options":#global
 ** "Application-level options":#app
+** "Functor-level options":#functor
 ** "Before and After":#before
 * "Standalone applications (outside of the OPI)":#standalone
 * "Hot Code Swapping":#swap
@@ -112,8 +113,17 @@ Simply export the option and set the value in the functor body.
 * <code>logLevel</code>: log level for application loging; default: trace
 * <code>pagesExpireAfter</code>: seconds from now that pages will expire; goes into the "Expires" HTTP header; default: 0
 * <code>useTokenInLinks</code>: if set to false, links to procedure values will be shorter, but also slightly vulnerable to very determined CSRF attacks (the attacker still has to guess or brute-force a user-specific 32-bit value); default: true
+* <code>mimeType</code>: see chapter [[Other Features]]
+* <code>charset</code>: see chapter [[Other Features]]
 * <code>forkedFunctions</code>: bool; whether subordinate spaces are used; for advanced users; setting this to false makes "bind" attributes pretty much unusable but allows side effects directly in user functions. Can be overridden for specific functions by using <code>fork(...)</code> in action handlers and hrefs.
 <br>
+
+h3. Functor-level options
+
+Functor-level options override application-level options.
+
+* <code>mimeType</code>: see chapter [[Other Features]]
+* <code>charset</code>: see chapter [[Other Features]]
 
 <a name="before"></a>
 
