@@ -1,0 +1,6 @@
+Sawhorse is a web server written in Mozart/Oz.
+It is a port of the Haskell Web Server (http://darcs.haskell.org/hws/),
+extended with a plugin system.
+It is intended to be used together with the Roads Web Application Framework.
+
+Wolfgang.Meyer@gmx.net
