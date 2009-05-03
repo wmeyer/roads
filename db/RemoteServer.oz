@@ -19,7 +19,8 @@ define
 	 ShutDown Finished
 	 RemoteF = functor
 		   import
-		      Server Application
+		      Server at 'x-ozlib://wmeyer/db/Server.ozf'
+		      Application
 		   define
 		      !ServerObject = {Server.create Schema Filename}
 		      {Wait ShutDown}
