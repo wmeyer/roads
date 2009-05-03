@@ -205,7 +205,7 @@ To check that it works, delete the session cookie in your browser (<code>roadsSe
 {TheRoads.setOption expireSessionsOnRestart true}
 </code></pre>
 
-Note that no <code>stdout</code> is available for an application that is started like this (internally uses an extra process). Therefore, Roads uses "sawhorse-logs/http-error.log" as the default log file in this case.
+Note that no <code>stdout</code> is available for an application that is started like this (internally uses an extra process). Therefore, Roads uses <code>"x-ozlib://wmeyer/sawhorse/sawhorse-log/http-error.log"</code> as the default log file in this case, which resolves to <code>"~/.oz/<version>/cache/x-ozlib/wmeyer/sawhorse/sawhorse-log/http-error.log"</code>.
 
 
 <a name="model"></a>

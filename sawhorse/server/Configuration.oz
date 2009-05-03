@@ -17,7 +17,7 @@ define
 		   defaultType: mimeType(text plain)
 		   mimeTypes: mimeTypes
 		   serverAdmin: "admin@localhost"
-		   logDir: "sawhorse-log"
+		   logDir: "x-ozlib://wmeyer/sawhorse/sawhorse-log"
 		   accessLogFile: "http-access.log"
 		   accessLogLevel: trace
 		   errorLogFile: stdout

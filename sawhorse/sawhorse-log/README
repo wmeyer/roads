@@ -1,0 +1,2 @@
+The real default log directory is in your home directory in:
+~/.oz/<version>/cache/x-ozlib/wmeyer/sawhorse/sawhorse-log

@@ -1,3 +1,3 @@
 makefile(
-   lib:['Placeholder.ozf']
+   lib:['placeholder']
 )

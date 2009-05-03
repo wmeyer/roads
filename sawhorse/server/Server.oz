@@ -28,7 +28,6 @@ import
    Module
    Property(put)
    Resolve
-   Path at 'x-oz://system/os/Path.ozf'
 export
    Start
    Restart
@@ -102,12 +101,6 @@ define
       end
    end
 
-   proc {CreateIfNotExists DirPath}
-      if {Not {Path.exists DirPath}} then
-	 {OS.mkDir DirPath [ 'S_IRUSR' 'S_IWUSR' 'S_IXUSR' ]}
-      end
-   end
-   
    local
       DefaultConfig = config(port:8080
 			     requestTimeout: 300
@@ -121,7 +114,7 @@ define
 			     defaultType:mimeType(text plain)
 			     mimeTypes:mimeTypes
 			     serverAdmin:"administrator@localhost"
-			     logDir: "sawhorse-log"
+			     logDir: "x-ozlib://wmeyer/sawhorse/sawhorse-log"
 			     accessLogFile:"http-access.log"
 			     accessLogLevel:trace
 			     errorLogFile:stdout
@@ -139,14 +132,14 @@ define
    end
 
    fun {AddLogging Config}
-      {CreateIfNotExists Config.logDir}
+      LogDir = {Atom.toString {Resolve.localize Config.logDir}.1}
       AccessStream = {NewStream init(Config.accessLogFile
-				     dir:Config.logDir)}
-      unit(trace:LogAccess ...) = {NewLogger init(module:"server"
+				     dir:LogDir)}
+      unit(trace:LogAccess ...) = {NewLogger init(module:nil
 						  stream:AccessStream
 						  logLevel:Config.accessLogLevel)}
       ErrorStream = {NewStream init(Config.errorLogFile
-				    dir:Config.logDir)}
+				    dir:LogDir)}
       unit(error:LogError
 	   debug:_
 	   trace:Trace
