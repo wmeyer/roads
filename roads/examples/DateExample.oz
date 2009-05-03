@@ -27,7 +27,7 @@ end
 {Roads.registerFunction date EnterDate}
 {Roads.run}
 
-%% From, To: first, last year
+%% F, T: first, last year
 %% Res will contain the date after successfull submission.
 fun {TextualDate F T Res}
    D M
