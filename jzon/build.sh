@@ -1,0 +1,1 @@
+ozmake --install --grade=freshen

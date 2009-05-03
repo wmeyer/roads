@@ -373,6 +373,7 @@ define
 	      Res
 	      CookiesToSend
 	      TheResponse
+	      MimeType = {CondSelect Functr mimeType App.mimeType}
 	   in
 	      {Context.forAll CSession closureCalled(ClosureId)}
 	      Res#
@@ -404,7 +405,7 @@ define
 		     %% otherwise pass through
 		     case FunResult of redirect(...) then FunResult
 		     [] response(...) then FunResult
-		     [] HtmlDoc then
+		     [] HtmlDoc andthen MimeType == mimeType(text html) then
 			{Html.render
 			 {PreprocessHtml
 			  {CallAfter PSession App Functr HtmlDoc}
@@ -412,6 +413,8 @@ define
 			  PSession ClosureSpace PathComponents
 			 }
 			}
+		     else
+			{CallAfter PSession App Functr FunResult}
 		     end
 		  catch E then
 		     exception(
@@ -437,7 +440,7 @@ define
 		  ServerConfig
 		  generated(Res)
 		  [{ContentTypeHeader
-		    {AdjoinAt {CondSelect Functr mimeType App.mimeType}
+		    {AdjoinAt MimeType
 		     charset {CondSelect Functr charset App.charset}
 		    }
 		   }
