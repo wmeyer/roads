@@ -56,7 +56,7 @@ define
       in
 	 if {Member {Label H} EmptyTags} then
 	    if Content \= nil then
-	       raise html(tagShouldBeEmpty(tag:Name contents:Content)) end
+	       raise html(tagShouldBeEmpty(tag:H contents:Content)) end
 	    end
 	    "<"#Name#AttrStr#">"
 	 else

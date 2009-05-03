@@ -31,7 +31,7 @@ Roads was developed using "Mozart 1.4.0":http://www.mozart-oz.org/download/view.
 
 h3. Installing the web server: Sawhorse
 
-Download the "Sawhorse":http://github.com/wmeyer/roads/downloads/sawhorse-0.2.0.zip web server and unpack it. Alternatively, clone the whole repository <code>git clone git://github.com/wmeyer/roads.git</code>.<br>
+Download the "Sawhorse":http://github.com/wmeyer/roads/downloads/sawhorse-0.2.0.zip web server and unpack it. Alternatively, clone the whole repository: <code>git clone git://github.com/wmeyer/roads.git</code>.<br>
 Build the web server with <code>build.sh</code> in the <code>sawhorse</code> directory. <b>You will need GCC installed. On Windows, you need Cygwin and GCC installed.</b><br>
 Sawhorse is basically a port of the "Haskell Web Server":http://darcs.haskell.org/hws/ to Oz, extended with a plugin system. Sawhorse is currently the only web server supported by Roads.
 
@@ -65,7 +65,7 @@ This simple example just returns a "record":http://www.mozart-oz.org/home/doc/tu
 
 h2. The Arc Challenge
 
-In Februar 2008, Paul Graham proposed The Arc Challenge:
+In Februar 2008, Paul Graham proposed "The Arc Challenge":http://www.paulgraham.com/arcchallenge.html:
 
 bq. Write a program that causes the url <code>said</code> (e.g. <code>http://localhost:port/said</code>) to produce a page with an input field and a submit button. When the submit button is pressed, that should produce a second page with a single link saying "click here." When that is clicked it should lead to a third page that says "you said: ..." where ... is whatever the user typed in the original input field. The third page must only show what the user actually typed. I.e. the value entered in the input field must not be passed in the url, or it would be possible to change the behavior of the final page by editing the url.
 
@@ -82,10 +82,10 @@ A possible solution to this challenge in Roads looks like this:
           form(input(type:text bind:Foo)
                input(type:submit)
                method:post
-               action:fun {$ _}
+               action:fun {$ _}  %% anonymous function with one unused argument
                          p(a("click here"
                              href:fun {$ _}
-                                     p("you said: " # Foo)
+                                     p("you said: " # Foo)  %% '#': string concatenation
                                   end
                             ))
                       end
@@ -97,7 +97,7 @@ in
 </code></pre>
       
 Most of the code in the <code>Said</code> function is just standard HTML, encoded as an Oz record. There are however two Roads-specific extensions in this example:
-# Input tags can have an additional <code>bind</code> attribute. It takes either a variable (like in this example) which will receive the submitted value, or a unary procedure which will be called with the input value.
+# Input tags can have an additional <code>bind</code> attribute. It takes either a variable which will receive the submitted value (like in this example) or a unary procedure which will be called with the input value.
 # <code>href</code> and <code>action</code> attributes can take function values instead of URLs. These are automatically converted to unique URLs. When these URLs are requested, the framework will make sure that the right function is called in the right context.
 
 The generated HTML for the outer function looks like this:
@@ -114,10 +114,10 @@ The generated HTML for the outer function looks like this:
 </html>
 </code></pre>
 
-By using anonymous functions and exploiting lexical scoping, we are able to access the <code>Foo</code> variable and embed the user-entered text into our output.
+By using anonymous functions and exploiting lexical scoping, we are able to access the <code>Foo</code> variable and embed the user-entered text into the output of the innermost function. (A more conventional method to access parameters is also available, see [[The Session Object|next chapter]]).
 
 <div style="margin-left:30px;padding:10px;background-color:#f8f8f8">
-What happens when we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to a different value. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in chapter [[Application Development]].<br>
+What happens if we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to a different value. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in chapter [[Application Development]].<br>
 The bottom line is that this function will behave as expected. Every invocation of the innermost nested function will have its own, independent value for <code>Foo</code>. Consequent or concurrent submission will never accidentally interact with each other.<br>
 </div>
 

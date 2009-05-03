@@ -463,18 +463,14 @@ define
 	      {AdjoinAt C4 path {CondSelect C4 path DefaultPath}}
 	   end
 	   
-	   %% .../abc/def/ghi?a=c;b=d -> .../abc/def?a=c;b=d
+	   %% .../abc/def/ghi?a=c;b=d -> .../abc/def
 	   fun {RemoveClosureId URI}
 	      Parts = {String.tokens URI &/}
-	      StartingParts NonEmptyStartingParts LastPart
-	      Query
-	      FullQuery
+	      StartingParts NonEmptyStartingParts
 	   in
-	      {List.takeDrop Parts {Length Parts}-1 StartingParts [LastPart]}
+	      StartingParts = {List.take Parts {Length Parts}-1}
 	      NonEmptyStartingParts = {Filter StartingParts fun {$ S} S \= nil end}
-	      {String.token LastPart &? _ Query}
-	      FullQuery = if Query == nil then nil else "?"#Query end
-	      {VirtualString.toString "/"#{Intercalate NonEmptyStartingParts "/"}#FullQuery}
+	      {VirtualString.toString "/"#{Intercalate NonEmptyStartingParts "/"}}
 	   end
 
 	   fun {MakeURL PathComponents Url}
@@ -531,6 +527,10 @@ define
 	      else {Procedure.is A}
 	      end
 	   end
+
+	   fun {IsFormInput Tag}
+	      {Member {Label Tag} [input select textarea]}
+	   end
 	   
 	   %% Replace special elements in generated html.
 	   %% (might crash for ill-formed html)
@@ -581,10 +581,10 @@ define
 			      Sess CurrentSpace PathComponents
 			      nil fun {$ F} F end Val}
 		     end
-		  [] bind andthen {Label Parent} == input then
+		  [] bind andthen {IsFormInput Parent} then
 		     {CallValidator bind Parent}
 		  [] bind then raise roads(bindAttributeOutsideOfInput) end
-		  [] validate andthen {Label Parent} == input then
+		  [] validate andthen {IsFormInput Parent} then
 		     {CallValidator validate Parent}
 		  [] validate then raise roads(validateAttributeOutsideOfInput) end
 		  else
