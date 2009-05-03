@@ -25,11 +25,23 @@ end
 
 [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
 {Roads.registerFunction date EnterDate}
+{Roads.registerFunction dateSimple EnterDateSimple}
 {Roads.run}
 
-%% F, T: first, last year
+fun {EnterDateSimple S}
+   Date
+in
+   form({TextualDate 2009 2020 ?Date}
+	input(type:submit value:"Submit date")
+	method:post
+	action:fun {$ _}
+		  p("You entered "#Date.year#"-"#Date.month#"-"#Date.day#".")
+	       end
+       )
+end
+
 %% Res will contain the date after successfull submission.
-fun {TextualDate F T Res}
+fun {TextualDate FirstYear LastYear Res}
    D M
 in
    'div'(input(type:text id:day
@@ -37,7 +49,7 @@ in
 	 input(type:text id:month
 	       validate:int_in(1 12) bind:M)
 	 input(type:text id:year
-	       validate:int_in(F T)
+	       validate:int_in(FirstYear LastYear)
 	       bind:proc {$ Y}
 		       Res = date(day:D month:M year:Y)
 		    end
@@ -46,12 +58,12 @@ in
 end
 
 %% Enter a date with popup menus.
-fun {SelectDate From To Res}
+fun {SelectDate FirstYear LastYear Res}
    D M
 in
    'div'({Selector 1 31 ?D}
 	 {Selector 1 12 ?M}
-	 {Selector From To
+	 {Selector FirstYear LastYear
 	  proc {$ Y}
 	     Res = date(day:D month:M year:Y)
 	  end
