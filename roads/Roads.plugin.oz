@@ -29,8 +29,8 @@ define
 		tupleAdd:TupleAdd
 		formatTime:FormatTime
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
-	   Query at 'x-ozlib://wmeyer/sawhorse/server/Query.ozf'
-	   Logging(newLogger:NewLogger) at 'x-ozlib://wmeyer/sawhorse/server/Logging.ozf'
+	   Query at 'x-ozlib://wmeyer/sawhorse/common/Query.ozf'
+	   Logging(newLogger:NewLogger) at 'x-ozlib://wmeyer/sawhorse/common/Logging.ozf'
 	   Base62(is 'from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
 	   FormValidator('class') at 'x-ozlib://wmeyer/roads/FormValidator.ozf'
 	export

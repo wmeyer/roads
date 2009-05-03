@@ -7,7 +7,7 @@ import
 	compareCaseInsensitive:CompareCaseInsensitive
 	tupleLessThan:TupleLessThan) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
    Timeout(withTimeout:WithTimeout)
-   Request(parseRequest:ParseRequest)
+   Request(parseRequest:ParseRequest) at 'x-ozlib://wmeyer/sawhorse/common/Request.ozf'
    Response(sendResponse:SendResponse
 	    contentTypeHeader:ContentTypeHeader
 	    lastModifiedHeader:LastModifiedHeader
@@ -20,8 +20,9 @@ import
    at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
    MimeTypes(init:InitMimeTypes mimeTypeOf:MimeTypeOf)
    Logging(newLogger:NewLogger newStream:NewStream)
+   at 'x-ozlib://wmeyer/sawhorse/common/Logging.ozf'
    Plugin(loadPlugins initializePlugins shutDownPlugins find call)
-   Query(parse)
+   Query(parse) at 'x-ozlib://wmeyer/sawhorse/common/Query.ozf'
    OS
    OsTime
    Open

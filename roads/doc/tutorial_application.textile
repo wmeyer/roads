@@ -48,6 +48,8 @@ Build both packages with <code>./build.sh</code> in their respective directories
 
 To start the application, feed <code>/pollapp/OPI.oz</code> in the Mozart OPI and go to "http://localhost:8080/poll":http://localhost:8080/poll.
 
+The default administrator account is "Admin" with the password "Admin".
+
 In <code>OPI.oz</code>, we see how an _application_ is registered, using the URL of the compiled functor which implements the application:
 <pre class="prettyprint lang-oz"><code>{Roads.registerApplication poll 'x-ozlib://wmeyer/pollapp/PollApp.ozf'}</code></pre>
 
