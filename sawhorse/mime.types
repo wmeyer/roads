@@ -1,1 +1,9 @@
 text/html		html htm
+text/plain		txt
+text/javascript		js
+application/json	json
+text/css		css
+application/pdf		pdf
+image/jpeg		jpg jpeg
+image/gif		gif
+image/png		png
