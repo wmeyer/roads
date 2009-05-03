@@ -9,7 +9,7 @@ define
 		   requestTimeout: 300
 		   keepAliveTimeout: 15
 		   acceptTimeOut: 2*60*1000
-		   documentRoot: "public_html"
+		   documentRoot: "x-ozlib://wmeyer/sawhorse/public_html"
 		   directoryIndex: "index.html"
 		   serverName: "localhost"
 		   serverAlias: nil

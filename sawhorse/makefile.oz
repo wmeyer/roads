@@ -1,5 +1,5 @@
 makefile(
-   subdirs:['common' 'pluginSupport' 'server' 'plugins']
+   subdirs:['common' 'pluginSupport' 'server' 'plugins' 'public_html']
    lib:['mime.types']
 
    uri : 'x-ozlib://wmeyer/sawhorse'

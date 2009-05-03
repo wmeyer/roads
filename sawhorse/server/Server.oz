@@ -113,7 +113,7 @@ define
 			     requestTimeout: 300
 			     keepAliveTimeout: 15
 			     acceptTimeOut:2*60*1000
-			     documentRoot: "public_html"
+			     documentRoot: "x-ozlib://wmeyer/sawhorse/public_html"
 			     directoryIndex: "index.html"
 			     serverName: "localhost"
 			     serverAlias: nil
@@ -446,7 +446,9 @@ define
    end
 
    fun {PrependDocRoot Config Path}
-      case Path of &/|_ then {Append Config.documentRoot Path}
+      DocRoot = {Atom.toString {Resolve.localize Config.documentRoot}.1}
+   in
+      case Path of &/|_ then {Append DocRoot Path}
       else raise server(malformedPath(Path)) end
       end
    end
