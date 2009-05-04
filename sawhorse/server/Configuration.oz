@@ -8,7 +8,8 @@ define
    Config = config(port:8080
 		   requestTimeout: 300
 		   keepAliveTimeout: 15
-		   acceptTimeOut: 2*60*1000
+		   acceptTimeout: 2*60*1000
+		   processingTimeout: 10
 		   documentRoot: "x-ozlib://wmeyer/sawhorse/public_html"
 		   directoryIndex: "index.html"
 		   serverName: "localhost"

@@ -23,11 +23,6 @@ in
       )
 end
 
-[Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
-{Roads.registerFunction date EnterDate}
-{Roads.registerFunction dateSimple EnterDateSimple}
-{Roads.run}
-
 fun {EnterDateSimple S}
    Date
 in
@@ -39,6 +34,11 @@ in
 	       end
        )
 end
+
+[Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
+{Roads.registerFunction date EnterDate}
+{Roads.registerFunction dateSimple EnterDateSimple}
+{Roads.run}
 
 %% Res will contain the date after successfull submission.
 fun {TextualDate FirstYear LastYear Res}

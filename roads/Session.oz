@@ -101,6 +101,17 @@ define
       }
    end
 
+   fun {GetParamAsList S LI}
+      P = if {HasFeature S.params LI} then
+	     case S.params.LI of list(Xs) then list(Xs)
+	     [] X then list([X])
+	     end
+	  else list(nil)
+	  end
+   in
+      {ExternalInput P}
+   end
+   
    local
       CookiePort
       thread
@@ -135,6 +146,9 @@ define
 	   removeShared:proc {$ LI} {SharedDict.remove S.shared LI} end
 	   %% params
 	   getParam:fun {$ LI} {ExternalInput S.params.LI} end
+	   getParamAsList:fun {$ LI}
+			     {GetParamAsList S LI}
+			  end
 	   condGetParam:fun {$ LI DefVal}
 			   if {HasFeature S.params LI} then {ExternalInput S.params.LI}
 			   else DefVal
@@ -191,9 +205,16 @@ define
    end
    end
    
-   fun {ExternalInput Xs}
-      externalInput(original:Xs
-		    escaped:{Value.byNeed fun {$} {Html.escape Xs} end})
+   fun {ExternalInput X}
+      externalInput(original:case X of list(Ys) then Ys else X end
+		    escaped:{Value.byNeed
+			     fun {$}
+				case X of list(Ys) then {List.map Ys Html.escape}
+				else {Html.escape X}
+				end
+			     end
+			    }
+		   )
    end
    
    proc {Destroy Session}

@@ -14,17 +14,21 @@ define
    end
    
    class Validator
-      feat id val len
+      feat id
 
+      attr val
+	 
       meth init(Id Val)
 	 self.id = Id
-	 self.val = Val
-	 self.len = {Length Val}
+	 val := Val
       end
 
+	    
       meth length_in(Min Max result:R)
+	 L = {Length @val}
+      in
 	 R =
-	 if self.len >= Min andthen self.len =< Max then true
+	 if L >= Min andthen L =< Max then true
 	 else
 	    'false'("The value of field \""#self.id#"\" must be between "#Min#
 		    " and "#Max#" characters long.")
@@ -33,7 +37,7 @@ define
 
       meth length_is(L result:R)
 	 R =
-	 if self.len == L then true
+	 if {Length @val} == L then true
 	 else
 	    'false'("The value of field \""#self.id
 		    #"\" must be exactly "#L#" characters long.")
@@ -41,7 +45,7 @@ define
       end
 
       meth int(result:R)
-	 IsInt = try {String.toInt self.val _} true catch _ then false end
+	 IsInt = try {String.toInt @val _} true catch _ then false end
       in
 	 R =
 	 if IsInt then true
@@ -53,7 +57,7 @@ define
       meth int_in(Min Max result:R)
 	 R =
 	 try
-	    V = {String.toInt self.val}
+	    V = {String.toInt @val}
 	 in
 	    if V >= Min andthen V =< Max then true
 	    else
@@ -66,7 +70,7 @@ define
       end
       
       meth float(result:R)
-	 IsFloat = try {String.toFloat self.val _} true catch _ then false end
+	 IsFloat = try {String.toFloat @val _} true catch _ then false end
       in
 	 R =
 	 if IsFloat then true
@@ -78,7 +82,7 @@ define
 
       meth is(X result:R)
 	 R =
-	 if self.val == X then true
+	 if @val == X then true
 	 else
 	    %% don't reveal the value of X here. might be security related!
 	    'false'("The value of field \""#self.id#"\" is not as expected.")
@@ -89,7 +93,7 @@ define
 	 Xs = {Map {Filter {Arity Msg} fun {$ I} I\=result end} fun {$ I} Msg.I end}
       in
 	 R =
-	 if {Member self.val Xs} then true
+	 if {Member @val Xs} then true
 	 else
 	    'false'("The value of field \""#self.id#"\" must be one of {"#
 		    {Intercalate
@@ -101,7 +105,7 @@ define
 	 Xs = {Map {Filter {Arity Msg} fun {$ I} I\=result end} fun {$ I} Msg.I end}
       in
 	 R =
-	 if {Not {Member self.val Xs}} then true
+	 if {Not {Member @val Xs}} then true
 	 else
 	    'false'("The value of field \""#self.id#"\" must not be one of {"#
 		    {Intercalate
@@ -111,7 +115,7 @@ define
 
       meth regex(RE result:R)
 	 R =
-	 case {Port.sendRecv RegexPort RE#self.val}
+	 case {Port.sendRecv RegexPort RE#@val}
 	 of match(...) then true
 	 [] false then 'false'("The value of field \""#self.id
 			       #"\" must match the regular expression \""#RE#"\".")
@@ -120,6 +124,20 @@ define
 
       meth 'true'(result:R)
 	 R = true
+      end
+
+      meth list(X result:R)
+	 Vs = @val
+      in
+	 R =
+	 for V in Vs default:true return:R do
+	    Res
+	    SpecWithRes = {AdjoinAt X result Res}
+	 in
+	    val := V
+	    {self SpecWithRes}
+	    if Res \= true then {R Res} end
+	 end
       end
    end
    

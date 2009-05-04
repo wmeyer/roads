@@ -87,6 +87,7 @@ Some validation requirements are very common. Instead of a validation function, 
 * <code>one_of(Val1 Val2 ... ValN)</code> to accept one of multiple constant values.
 * <code>not_one_of(Val1 Val2 ... ValN)</code> to accept all but a number of constant values.
 * <code>regex("RegularExpression")</code> to validate a parameter with a "regular expression":http://www.mozart-oz.org/home/doc/contrib/node1.html.
+* <code>list(Validator)</code> for parameters which are expected to occur multiple times (as with select elements with multiple selection). <code>Validator</code> can be any of the values above.
 <br>
 
 

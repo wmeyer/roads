@@ -15,6 +15,7 @@ import
 	    requestTimeOutResponse:RequestTimeOutResponse
 	    notImplementedResponse:NotImplementedResponse
 	    internalServerErrorResponse:InternalServerErrorResponse
+	    internalServerErrorResponseWithDesc:InternalServerErrorResponseWithDesc
 	    notFoundResponse:NotFoundResponse
 	    badRequestResponse:BadRequestResponse)
    at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
@@ -106,7 +107,8 @@ define
       DefaultConfig = config(port:8080
 			     requestTimeout: 300
 			     keepAliveTimeout: 15
-			     acceptTimeOut:2*60*1000
+			     processingTimeout: 10
+			     acceptTimeout:2*60*1000
 			     documentRoot: "x-ozlib://wmeyer/sawhorse/public_html"
 			     directoryIndex: "index.html"
 			     serverName: "localhost"
@@ -179,7 +181,7 @@ define
 	 {Unblocked Thread
 	  proc {$}
 	     ServerSocket = {New Open.socket
-			     init(type:stream protocol:"tcp" time:Config.acceptTimeOut)}
+			     init(type:stream protocol:"tcp" time:Config.acceptTimeout)}
 	  in
 	     try
 		{ServerSocket bind(takePort:Config.port)}
@@ -271,7 +273,15 @@ define
 	 %% log ?
 	 {SendResponse ClientSocket {RespCreator Config}}
       [] ok(Req) then
-	 Response = {HandleRequest Config {AdjoinAt Req remoteHost HostAddress}}
+	 Response =
+	 case {WithTimeout Config.processingTimeout * 1000
+	       fun {$} {HandleRequest Config {AdjoinAt Req remoteHost HostAddress}} end}
+	 of timeout then
+	    {Config.logError timeoutProcessingRequest}
+	    {InternalServerErrorResponseWithDesc
+	     Config "Processing the request took too much time"}
+	 [] R then R
+	 end
       in
 	 {SendResponse ClientSocket Response}
 	 local

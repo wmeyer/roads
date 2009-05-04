@@ -13,12 +13,23 @@ define
       fun {$ S}
 	 if {Not {HasFeature TagInfo validate}} then {F0 S}
 	 else
-	    ValFun = if {Procedure.is TagInfo.validate} then TagInfo.validate
-		     else {Validator.create TagInfo.validate}
-		     end
-	    V = {S.getParam TagInfo.name}.original
+	    TagVal = TagInfo.validate
 	    ParamIdent = TagInfo.ident
+	    V
+	    ValFun
 	 in
+	    if {Procedure.is TagVal} then
+	       V = {S.getParam TagInfo.name}.original
+	       ValFun = TagVal
+	    elseif {Label TagVal} == list then
+	       V = {S.getParamAsList TagInfo.name}.original
+	       ValFun = if {Procedure.is TagVal.1} then TagVal.1
+			else {Validator.create TagVal}
+			end
+	    else
+	       V = {S.getParam TagInfo.name}.original
+	       ValFun = {Validator.create TagVal}
+	    end
 	    case {ValFun ParamIdent V}
 	    of true then {F0 S}
 	    [] false then "Validation of field \""#ParamIdent#"\" failed."
@@ -32,9 +43,41 @@ define
    fun {BindingWrapper TagInfo F0}
       fun {$ S}
 	 if {HasFeature TagInfo bind} then
-	    {TagInfo.bind {S.getParam TagInfo.name}}
+	    Binder = TagInfo.bind
+	    Val
+	    BindProc = {CreateBindProc Binder}
+	 in
+	    if {IsDet Binder} andthen {Record.is Binder} andthen {Label Binder} == list then
+	       Val = {S.getParamAsList TagInfo.name}
+	    else
+	       Val = {S.getParam TagInfo.name}
+	    end
+	    {BindProc Val}
 	 end
 	 {F0 S}
+      end
+   end
+
+   fun {CreateBindProc Binder}   
+      proc {SimpleBinder V}
+	 Binder = V
+      end
+      proc {ListBinder V}
+	 Binder.1 = V
+      end
+   in
+      if {IsFree Binder} then SimpleBinder %% single value -> free var
+      elseif {Procedure.is Binder} then Binder %% single value -> proc
+      elseif {Label Binder} == list then
+	 if {IsFree Binder.1} then %% list -> free var
+	    ListBinder
+	 elseif {Procedure.is Binder.1} then %% list -> proc
+	    Binder.1
+	 else %% unif. of list with determined var
+	    ListBinder
+	 end
+      else %% unification of single value with determined var
+	 SimpleBinder
       end
    end
    
@@ -46,21 +89,18 @@ define
 	 counter := 0
 	 tags := nil
       end
-      
+
       %% precondition: InputTag has a bind attribute
       %% return: 'nothing' or just(the name of the input tag if generated)
       meth bind(InputTag ?GenTagName)
 	 Binder = InputTag.bind
-	 BindProc = if {IsDet Binder} andthen {Procedure.is Binder} then Binder
-		    else proc {$ V} Binder = V end
-		    end
 	 TagName
       in
 	 if {HasFeature InputTag name} then GenTagName = nothing TagName = InputTag.name
 	 else TagName = {self NewName($)} GenTagName = just(TagName)
 	 end
 	 tags := unit(name:TagName id:{CondSelect InputTag id unknown}
-		      bind:BindProc)
+		      bind:Binder)
 	 |@tags
       end
 

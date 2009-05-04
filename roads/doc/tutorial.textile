@@ -10,7 +10,18 @@ $(document).ready(function() {
 
 h1. The Roads Web Application Framework
 
-Welcome to the official Roads tutorial. Roads is a web application framework for "Mozart/Oz":http://www.mozart-oz.org.
+Welcome to the official Roads documentation. Roads is a web application framework for "Mozart/Oz":http://www.mozart-oz.org.
+
+Some highlights:
+
+* very easy to get started
+* does _not_ abstract away HTML and JavaScript
+* (anonymous) functions as form actions link targets
+* direct access to form parameters
+* composable form parts (like "formlets")
+* effective measures against common security threads
+* verifying of embedded JavaScript at compile time with JSLint
+
 
 h2. Contents
 

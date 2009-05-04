@@ -12,7 +12,7 @@ define
       else
 	 Pairs = {Map {String.tokens Xs &&} fun {$ X} {String.tokens X &=} end}
       in
-	 {List.toRecord unit
+	 {ListToRecord2 unit
 	  {Map Pairs fun {$ Vs}
 			%% keep the original charset!
 			case Vs of [K V] then
@@ -26,6 +26,25 @@ define
       end
    end
 
+   fun {ListToRecord2 Lab Xs}
+      Dict = {Dictionary.new}
+      KeyCount = {Dictionary.new} %% needed to distinguish from strings
+   in
+      for K#V in Xs do
+	 Dict.K := {Append {CondSelect Dict K nil} [V]}
+	 KeyCount.K := {CondSelect KeyCount K 0} + 1
+      end
+      for K in {Dictionary.keys Dict} do
+	 Multiple = {CondSelect KeyCount K 0} > 1
+      in
+	 %% if Multiple, then it is definitely a list.
+	 %% if not, it could still be a one-element list,
+	 %% but this has to be handled in app code, depending on expectations.
+	 Dict.K := if Multiple then list(Dict.K) else Dict.K.1 end
+      end
+      {Dictionary.toRecord Lab Dict}
+   end
+   
    fun {PercentDecode Xs}
       case Xs of nil then nil
       [] &+|Xr then 32|{PercentDecode Xr}

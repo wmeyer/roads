@@ -69,7 +69,7 @@ define
    fun {ConcatVSMap Xs F} {ConcatVS {Map Xs F}} end
 
    fun {RenderAttribute Name#Value}
-      Name#"=\""#Value#"\" "
+      Name#if Value == unit then nil else "=\""#Value#"\"" end#" "
    end
 
    RemoveAttribute = {NewName}
