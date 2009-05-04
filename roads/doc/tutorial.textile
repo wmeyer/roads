@@ -14,9 +14,9 @@ Welcome to the official Roads documentation. Roads is a web application framewor
 
 Some highlights:
 
-* very easy to get started
-* does _not_ abstract away HTML and JavaScript
-* (anonymous) functions as form actions link targets
+* easy to get started
+* (anonymous) functions as form actions and link targets
+* flexibility (does _not_ try to completely abstract away HTML, JavaScript or HTTP)
 * direct access to form parameters
 * composable form parts (like "formlets")
 * effective measures against common security threads
@@ -129,16 +129,16 @@ By using anonymous functions and exploiting lexical scoping, we are able to acce
 
 <div style="margin-left:30px;padding:10px;background-color:#f8f8f8">
 What happens if we submit multiple times, e.g. by using the Back button? <code>Foo</code> will be bound to a different value. This would normally cause an exception, because Oz variables are immutable logic variables (similar to single assignment variables). To avoid this situation, Roads uses "computation spaces":http://www.mozart-oz.org/home/doc/system/node45.html. Every nested function is executed within a subordinate computation space, and variable bindings are only visible in that space. We will discuss this in more detail in chapter [[Application Development]].<br>
-The bottom line is that this function will behave as expected. Every invocation of the innermost nested function will have its own, independent value for <code>Foo</code>. Consequent or concurrent submission will never accidentally interact with each other.<br>
+The bottom line is that the function will behave as expected. Every invocation of the innermost nested function will have its own, independent value for <code>Foo</code>. Consequent or concurrent submission will never accidentally interact with each other.<br>
 </div>
 
 The <code>bind</code> attribute is not merely a matter of convenience. It is also essential to make fragments of HTML forms composable, as discussed in chapter [[Other Features]].
 <br>
 
 
-h3. Grouping Functions in Functors
+h3. Sharing HTML code between Functions
 
-There is one real problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a simpler way to share code between multiple functions.
+There is one real problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a better way to share code between multiple functions.
 
 To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document:
 
