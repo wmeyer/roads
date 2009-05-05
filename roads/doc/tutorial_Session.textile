@@ -97,6 +97,7 @@ POST and GET parameters can be accessed under their name, i.e. the identifier th
 
 h3. Interface
 * <code>{Session.getParam <key>}</code>
+* <code>{Session.getParamAsList <key>}</code>; if multiple values are expected
 * <code>{Session.condGetParam <key> <default>}</code>
 * <code>{Session.memberParam <key>}</code>
 

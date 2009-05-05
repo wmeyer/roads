@@ -16,11 +16,8 @@ Some highlights:
 
 * easy to get started
 * (anonymous) functions as form actions and link targets
-* flexibility (does _not_ try to completely abstract away HTML, JavaScript or HTTP)
-* direct access to form parameters
 * composable form parts (like "formlets")
 * effective measures against common security threads
-* verifying of embedded JavaScript at compile time with JSLint
 
 
 h2. Contents
@@ -40,17 +37,34 @@ h2. Getting Started
 We expect the reader to be familiar with basic HTML and the fundamentals of the Oz programming language.
 Roads was developed using "Mozart 1.4.0":http://www.mozart-oz.org/download/view.cgi?action=default&version=1.4.0. But it was also tested successfully with Mozart 1.3.2 on Debian stable.
 
-h3. Installing the web server: Sawhorse
+h3. Installing Roads
 
-Download the "Sawhorse":http://github.com/wmeyer/roads/downloads/sawhorse-0.2.0.zip web server and unpack it. Alternatively, clone the whole repository: <code>git clone git://github.com/wmeyer/roads.git</code>.<br>
-Build the web server with <code>build.sh</code> in the <code>sawhorse</code> directory. <b>You will need G++ installed. On Windows, you need Cygwin and G++ installed.</b><br>
-Sawhorse is basically a port of the "Haskell Web Server":http://darcs.haskell.org/hws/ to Oz, extended with a plugin system. Sawhorse is currently the only web server supported by Roads.
+Clone Roads:
 
-h3. Installing and Testing Roads
+<pre class="prettyprint lang-bash">
+git clone "git://github.com/wmeyer/roads.git"
+</pre>
 
-Next, download "Roads":http://github.com/wmeyer/roads/downloads/roads-0.2.0.zip, unpack it and run <code>build.sh</code> in the <code>roads</code> directory.
+or download and unpack it:
 
-Now, lets try a "Hello, world"-application by starting the Emacs-based Mozart OPI and copy-pasting the following code:
+<pre class="prettyprint lang-bash">
+wget "http://github.com/wmeyer/roads/downloads/roads-full-0.2.0.zip"
+unzip "roads-full-0.2.0.zip"
+</pre>
+
+Build it (with <notextile><b>G++</b></notextile> installed; on Windows: with <b>Cygwin<sup><a href="#fn1">1</a></sup> and G++</b> installed):
+
+<pre class="prettyprint lang-bash">
+cd roads
+./buildAll.sh
+</pre>
+
+In addition to Roads itself, this installs a number of helpful Oz libraries and the Sawhorse webserver. Sawhorse is basically a port of the "Haskell Web Server":http://darcs.haskell.org/hws/ to Oz, extended with a plugin system. Sawhorse is currently the only web server supported by Roads.
+
+
+h3. Hello World
+
+Lets try a "Hello, world"-application by starting the Emacs-based Mozart OPI and copy-pasting the following code (<code>/roads/examples/Hello.oz</code>):
 
 <pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}  %% link to Roads
@@ -65,8 +79,7 @@ in
    {Roads.run}
 </code></pre>
 
-Execute the code in Emacs (menu Oz->Feed Buffer) and navigate to "http://localhost:8080/hello":http://localhost:8080/hello in your web browser.
-<b>You can stop the application (and the web server) by feeding the line <code>{Roads.shutDown}</code> or by halting Oz with <code>C-. h</code></b>.
+Execute the code in Emacs (menu Oz->Feed Buffer) and navigate to "http://localhost:8080/hello":http://localhost:8080/hello in your web browser. <b>You can stop the application (and the web server) by feeding the line <code>{Roads.shutDown}</code> or by halting Oz with <code>C-. h</code></b>.
 
 In case of problems, take a look at the <code>*Oz Emulator*</code> buffer, which by default receives Sawhorse and Roads log messages.
 
@@ -80,7 +93,7 @@ In Februar 2008, Paul Graham proposed "The Arc Challenge":http://www.paulgraham.
 
 bq. Write a program that causes the url <code>said</code> (e.g. <code>http://localhost:port/said</code>) to produce a page with an input field and a submit button. When the submit button is pressed, that should produce a second page with a single link saying "click here." When that is clicked it should lead to a third page that says "you said: ..." where ... is whatever the user typed in the original input field. The third page must only show what the user actually typed. I.e. the value entered in the input field must not be passed in the url, or it would be possible to change the behavior of the final page by editing the url.
 
-A possible solution to this challenge in Roads looks like this:
+A possible solution to this challenge in Roads looks like this (<code>/roads/examples/SaidSimple.oz</code>):
 
 <pre class="prettyprint lang-oz"><code>declare
    [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
@@ -138,9 +151,9 @@ The <code>bind</code> attribute is not merely a matter of convenience. It is als
 
 h3. Sharing HTML code between Functions
 
-There is one real problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a better way to share code between multiple functions.
+There is a small problem with this example, though. The inner functions do not return valid HTML documents but only fragments. We could fix this by extending these functions with <code>html(head(title(...)) body(...))</code>. However, there is a better way to share code between multiple functions.
 
-To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document:
+To use this method, we encapsulate the <code>Said</code> function in a functor (an Oz module). A functor can export multiple functions which are mapped to URLs according to the name which is used to export them. Additionally, a Roads functor can have <code>Before</code> and <code>After</code> functions which are called before and after every regular function. In this example we use the <code>After</code> function to embed the HTML fragments of the <code>Said</code> function and the two nested functions into an HTML document (<code>/roads/examples/Said.oz</code>):
 
 <pre class="prettyprint lang-oz"><code>declare
 [Roads] = {Module.link ['x-ozlib://wmeyer/roads/Roads.ozf']}
@@ -186,7 +199,15 @@ Instead of the literal functor value, we could also have specified the path to a
 
 You might have noticed that all HTML-generating functions take one argument: the session object. We did not use it so far, but in the next section you will see why it is useful.
 
+
 h2. &nbsp;
+
+
+<a name="fn1"></a><sup>1</sup>  After a recent Cygwin update (version 1.5.25), I had to replace the link to g++ with the actual file to make ozmake (the Oz build tool) work:
+<pre class="prettyprint lang-bash">
+rm /usr/bin/g++
+cp /etc/alternatives/g++ /usr/bin/g++.exe
+</pre>
 
 Next: [[The Session Object]]
 
