@@ -3,6 +3,7 @@
 *.so-win32-i486
 *.log
 *.dat
+!jzon/utf2iso.dat
 *~
 *#
 *.ticket

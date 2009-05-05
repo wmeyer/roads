@@ -30,6 +30,7 @@ import
    Module
    Property(put)
    Resolve
+   SocketSupport at 'x-ozlib://wmeyer/sawhorse/server/SocketSupport.so{native}'
 export
    Start
    Restart
@@ -184,6 +185,7 @@ define
 			     init(type:stream protocol:"tcp" time:Config.acceptTimeout)}
 	  in
 	     try
+		{SocketSupport.set_reuse_addr {ServerSocket getDesc($ _)}} %% noop on Win
 		{ServerSocket bind(takePort:Config.port)}
 		{ServerSocket listen}
 		{AcceptConnections Config ServerSocket}

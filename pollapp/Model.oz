@@ -1,6 +1,6 @@
 functor
 import
-   DBServer at 'x-ozlib://wmeyer/db/RemoteServer.ozf'
+   DBServer at 'x-ozlib://wmeyer/db/Server.ozf'
    ActiveObject at 'x-ozlib://wmeyer/roads/appSupport/ActiveObject.ozf'
    MD5 at 'x-ozlib://wmeyer/sawhorse/pluginSupport/md5.so{native}'
    RandomBytesGenerator

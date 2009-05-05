@@ -33,7 +33,7 @@ define
 
    fun {StartDetachedFunctor URL}
       Result
-      TmpTicket = {Connection.offerMany Result}
+      TmpTicket = {Connection.offerUnlimited Result}
    in
       {OS.exec ozengine ['x-ozlib://wmeyer/roads/RunFunctor.ozf'
 			 {VirtualString.toAtom '--functor='#URL}
