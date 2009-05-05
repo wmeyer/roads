@@ -70,6 +70,5 @@ end
    
 in
 
-{Roads.setSawhorseOption errorLogFile stdout}
 {Roads.registerFunctor '' Ajax}
 {Roads.run}

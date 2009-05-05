@@ -31,7 +31,7 @@ define
 end
 
 in
-{Roads.setSawhorseOption serverAlias ["92.224.156.169"]}
+
 {Roads.registerFunctor '' Pages}
 {Roads.run}
 

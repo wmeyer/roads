@@ -11,7 +11,7 @@ define
       form(input(type:text name:foo)
 	   input(type:submit)
 	   method:get
-	   action:"/handleSaid" %url(function:handleSaid)
+	   action:url(function:handleSaid)
 	  )
    end
 
@@ -21,7 +21,6 @@ define
       {S.validateParameters [foo(validate:length_in(1 10))]}
       p(a("click here"
 	  href:fun {$ S}
-		  {S.regenerateSessionId}
 		  p("you said: "#Foo)
 	       end
 	 ))
@@ -36,7 +35,6 @@ end
 
 in
 
-{Roads.setSawhorseOption errorLogFile stdout}
 {Roads.registerFunctor '' Pages}
 {Roads.run}
 

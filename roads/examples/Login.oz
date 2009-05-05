@@ -28,6 +28,7 @@ fun {Login Session}
 in
    form({GetUserName ?UserName}
 	{CheckPassword UserName}
+	input(type:submit)
 	method:post
 	action:fun {$ Session}
 		  p("Hello "#UserName#"! You logged in successfully.")
@@ -37,7 +38,6 @@ end
 
 in
 
-{Roads.setSawhorseOption errorLogFile stdout}
 {Roads.registerFunction login Login}
 {Roads.run}
 
