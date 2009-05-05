@@ -190,7 +190,7 @@ h2. JavaScript
 
 * The best approach is probably to serve JavaScript code as separate files which are referenced in the HTML code.
 * But you may also write JavaScript code as strings in Oz code.
-* There is a package "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip which offers some additional features:
+* The full Roads installations comes with is a package "javascript" which offers some additional features:
 
 <b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint. WSH is usually installed by default. To install Rhino, <code>apt-get install rhino</code> should do the trick.
 
@@ -292,7 +292,7 @@ Writing JavaScript like this might be useful if you construct the code programma
 
 h2. JSON
 
-* Library to convert Oz values to JSON (with UTF-8 encoding): "jzon-0.2.0":http://github.com/wmeyer/roads/downloads/jzon-0.2.0.zip.
+* Library to convert Oz values to JSON (with UTF-8 encoding): <code>/jzon/JSON.oz</code>.
 
 <b>Example</b> (extract from <code>/roads/examples/JSON.oz</code>):
 <pre><code class="prettyprint lang-oz">...
@@ -327,7 +327,7 @@ h2. Ajax
 
 * no special support for Ajax
 * but also no obstacles if you want to use it
-* Simple example: <code>roads/examples/Ajax.oz</code>, "http://localhost:8080/select":http://localhost:8080/select, example needs "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip installed
+* Simple example: <code>roads/examples/Ajax.oz</code>, "http://localhost:8080/select":http://localhost:8080/select
 
 <a name="css"></a>
 

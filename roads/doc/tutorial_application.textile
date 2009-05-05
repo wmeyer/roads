@@ -18,7 +18,7 @@ For long running applications, it can be important to be able to update the code
 h2. Contents
 
 * "Application Configuration":#conf
-** "Installation of the Example Application":#install
+** "Running the Example Application":#install
 ** "Init, OnRestart and ShutDown":#init
 ** "Global options":#global
 ** "Application-level options":#app
@@ -37,14 +37,7 @@ As an example for this chapter, we introduce a simple poll application. This app
 
 <a name="install"></a>
 
-h3. Installation of the Example Application
-
-If you did not clone the complete Git-repository in the first chapter, you need to download and unpack two packages to try out the example application:
-
-# "db-0.2.0.zip":http://github.com/wmeyer/roads/downloads/db-0.2.0.zip: a simple in-memory database system whhich is used by the example application
-# "pollapp-0.2.0.zip":http://github.com/wmeyer/roads/downloads/pollapp-0.2.0.zip: the application itself
-
-Build both packages with <code>./build.sh</code> in their respective directories.
+h3. Running the Example Application
 
 To start the application, feed <code>/pollapp/OPI.oz</code> in the Mozart OPI and go to "http://localhost:8080/poll":http://localhost:8080/poll.
 
