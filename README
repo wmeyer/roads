@@ -3,6 +3,6 @@ Roads is a web application framework for Mozart/Oz.
 This repository is for Roads and supporting libraries and examples.
 See http://wiki.github.com/wmeyer/roads !
 
-Use ./buildAll.sh  (with GCC and, on Windows, with cygwin) to build all libraries.
+Use ./buildAll.sh  (with G++ and, on Windows, with cygwin) to build all libraries.
 
 Wolfgang.Meyer@gmx.net
