@@ -192,7 +192,7 @@ h2. JavaScript
 * But you may also write JavaScript code as strings in Oz code.
 * There is a package "javascript-0.2.0":http://github.com/wmeyer/roads/downloads/javascript-0.2.0.zip which offers some additional features:
 
-<b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint. Therefore, on non-Windows systems, Java must be installed.
+<b>Check your Javascript code with "JSLint":http://www.jslint.com/</b>. JSLint in implemented in JavaScript. Roads uses either the "Windows Scripting Host" or "Rhino" (a JavaScript engine implemented in Java) to execute JSLint. WSH is usually installed by default. To install Rhino, <code>apt-get install rhino</code> should do the trick.
 
 <b>Example</b> (<code>/roads/examples/Ajax.oz</code>):
 <pre class="prettyprint lang-oz"><code>functor Ajax

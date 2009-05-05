@@ -71,7 +71,7 @@ define
       JSLINTJS = {Resolve.localize "x-ozlib://wmeyer/javascript/jslint_rhino.js"}.1
    in
       JSLint := {VirtualString.toString
-		 "java org.mozilla.javascript.tools.shell.Main \""#JSLINTJS#"\" "}
+		 "rhino \""#JSLINTJS#"\" "}
    end
 
    JSLintOptions = {NewCell nil}

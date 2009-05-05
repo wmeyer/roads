@@ -66,7 +66,7 @@ OZ_BI_define(get,2,1)
     OZ_RETURN(it->second);
   }
   else {
-    OZ_RETURN( OZ_raiseC( "keyNotFound", 0 ) );
+    OZ_RETURN( OZ_raiseC( (char*)"keyNotFound", 0 ) );
   }
 }
 OZ_BI_end
