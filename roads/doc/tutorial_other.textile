@@ -8,8 +8,6 @@ $(document).ready(function() {
 });
 </script></notextile>
 
-h1. Other Features
-
 <b>Draft version!</b>
 
 Roads features which have not been discussed in other chapters.

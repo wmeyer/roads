@@ -8,8 +8,6 @@ $(document).ready(function() {
 });
 </script></notextile>
 
-h1. Future Development
-
 Features planned for future Roads releases:
 
 * Caching (fragment caching; page caching for pages without generated urls)

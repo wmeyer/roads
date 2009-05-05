@@ -8,8 +8,6 @@ $(document).ready(function() {
 });
 </script></notextile>
 
-h1. Application Development
-
 Up to now, we have only dealt with small examples which contained one or two functions. Real applications typically consist of a number of modules. We will show how to structure such applications.<br>
 Real applications also distinguish between a _model_ which contains the application data and logic, and one or more _views_ which present the data to the user. The code in the <code>action</code> handlers, <code>bind</code> procedures and <code>validate</code> functions can be considered part of the _controller_: the glue code which handles user input and typically calls functions of the model layer. We will present two approaches how to separate model and views with Roads.<br>
 For long running applications, it can be important to be able to update the code without any service interruption. This is very easy to implement with Roads.

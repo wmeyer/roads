@@ -8,7 +8,6 @@ $(document).ready(function() {
 });
 </script></notextile>
 
-h1. The Session Object
 
 When an URL is requested, Roads calls the associated function with a session object as its sole argument. Sessions are established and identified with a cookie (named "roadsSession").
 

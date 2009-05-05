@@ -8,8 +8,6 @@ $(document).ready(function() {
 });
 </script></notextile>
 
-h1. Security
-
 This chapter is about common security threats to web applications and how Roads helps to prevent them. Roads does not totally avoid these threats, so as a developer you have to be familiar with them.
 
 bq. <b>Roads does currently not support the HTTPS protocol and is therefore not suited for high-security applications at this point of its developement.</b>
@@ -199,6 +197,6 @@ However, if you write a POST/GET handler function and explicitly register it und
 
 h2. &nbsp;
 
-Previous: [[The Session Object]] &nbsp;&nbsp; Next: [[Application Deployment]]
+Previous: [[The Session Object]] &nbsp;&nbsp; Next: [[Application Development]]
 
 "Wolfgang.Meyer@gmx.net":mailto:Wolfgang.Meyer@gmx.net
