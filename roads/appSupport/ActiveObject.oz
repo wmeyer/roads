@@ -19,13 +19,12 @@ import
    Pickle
 export
    new:NewActive
+   NewInterface
    Decouple
 define
-   fun {NewActive Class Init}
+   fun {NewInterface TheObject}
       Channel
       thread
-	 TheObject = {New Class Init}
-      in
 	 for Msg0 in {Port.new $ Channel} do
 	    {TheObject {UnmarshalMessage Msg0}}
 	 end
@@ -37,6 +36,10 @@ define
       in
 	 {Port.sendRecv Channel Msg ?ReturnValue}
       end
+   end
+   
+   fun {NewActive Class Init}
+      {NewInterface {New Class Init}}
    end
    
    fun {MarshalMessage Msg ?ReturnValue}
