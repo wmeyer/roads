@@ -6,6 +6,7 @@ makefile(
 	'ProcessSingleton.ozf'
 	'RunFunctor.ozf'
 	'TheRoads.ozf'
+	'DocumentCache.ozf'
        ]
    uri: 'x-ozlib://wmeyer/roads'
    mogul: 'mogul:/wmeyer/roads'      

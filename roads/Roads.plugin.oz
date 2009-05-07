@@ -16,7 +16,7 @@ define
 	   Context(forAll) at 'x-ozlib://wmeyer/roads/Context.ozf'
 	   Routing at 'x-ozlib://wmeyer/roads/Routing.ozf'
 	   Speculative at 'x-ozlib://wmeyer/roads/Speculative.ozf'
-	   Html(render mapAttributes removeAttribute)
+	   Html(render renderFragment mapAttributes removeAttribute)
 	   at 'x-ozlib://wmeyer/sawhorse/common/Html.ozf'
 	   Response(okResponse:OkResponse
 		    contentTypeHeader:ContentTypeHeader
@@ -33,6 +33,8 @@ define
 	   Logging(newLogger:NewLogger) at 'x-ozlib://wmeyer/sawhorse/common/Logging.ozf'
 	   Base62(is 'from' to) at 'x-ozlib://wmeyer/roads/Base62.ozf'
 	   FormValidator('class') at 'x-ozlib://wmeyer/roads/FormValidator.ozf'
+	   DocumentCache at 'x-ozlib://wmeyer/roads/DocumentCache.ozf'
+	   ActiveObject at 'x-ozlib://wmeyer/roads/appSupport/ActiveObject.ozf'
 	export
 	   %% Plugin interface
 	   name:RoadsName
@@ -70,7 +72,7 @@ define
 			   closureIdIssuer:{IdIssuer.create 4}
 			   serverName:ServerConfig.serverName
 			   serverConfig:ServerConfig
-
+			   documentCache:{New DocumentCache.'class' init}
 			  )
 	      Logger = {CreateRoadsLogger ServerConfig}
 	   end
@@ -99,6 +101,7 @@ define
 			   closureIdIssuer:OldState.closureIdIssuer
 			   serverName:ServerConfig.serverName
 			   serverConfig:ServerConfig
+			   documentCache:{New DocumentCache.'class' init}
 			  )
 	      Logger = {CreateRoadsLogger ServerConfig}
 	   end
@@ -137,6 +140,8 @@ define
 			  useTokenInLinks:{CondSelect AppModule useTokenInLinks true}
 			  charset:{CondSelect AppModule charset "ISO-8859-1"}
 			  mimeType:{CondSelect AppModule mimeType mimeType(text html)}
+			  cacheDuration:{CondSelect AppModule cacheDuration
+					 {CondSelect Config cacheDuration 2*60*1000}}
 			  logger:AppLogger
 			 )
 	   end
@@ -189,9 +194,10 @@ define
 	      %% find out which function to call (if no closure is given)
 	      %% (here we use request-dependent global state to use the old configuration
 	      %%  for old sessions)
+	      RequestState = {StateFromRequest Req}
 	      PathComponents
 	      App Functr Function MaybeClosureId
-	      {Routing.analyzePath {StateFromRequest Req} Path
+	      {Routing.analyzePath RequestState Path
 	       ?PathComponents ?App ?Functr ?Function ?MaybeClosureId}
 	      = true
 	      BasePath = PathComponents.basePath
@@ -213,6 +219,7 @@ define
 			  closureId:~1
 			  closureSpace:unit
 			  sessionIdChanged:SessionIdChanged
+			  state:RequestState
 			 )}
 		 elseif Type == post then
 		    %% POST REQUEST
@@ -271,6 +278,7 @@ define
 						Closure.space
 					     end
 				sessionIdChanged:SessionIdChanged
+				state:RequestState
 			       )}
 		       elseif Type == post then
 			  %% POST REQUEST (redirect to get request of closure
@@ -369,6 +377,7 @@ define
 		     pathComponents:PathComponents
 
 		     sessionIdChanged:SessionIdChanged
+		     state:RequestState
 		    )}
 	      Res
 	      CookiesToSend
@@ -387,6 +396,11 @@ define
 		  PSession = {Session.'prepare' State App.logger CSession Req Inputs}
 		  RealFun = {NewCell {CallBefore PSession App Functr Function}}
 		  FunResult
+		  DocumentCache = {Value.byNeed
+				   fun {$} {ActiveObject.newInterface RequestState.documentCache} end}
+		  fun {PreprocessIt Doc}
+		     {PreprocessHtml Doc App Functr PSession ClosureSpace PathComponents}
+		  end
 	       in
 		  try
 		     FunResult =
@@ -407,10 +421,11 @@ define
 		     [] response(...) then FunResult
 		     [] HtmlDoc andthen MimeType == mimeType(text html) then
 			{Html.render
-			 {PreprocessHtml
-			  {CallAfter PSession App Functr HtmlDoc}
-			  App Functr
-			  PSession ClosureSpace PathComponents
+			 {DoCaching DocumentCache PreprocessIt
+			  {CondSelect Functr cacheDuration App.cacheDuration}
+			  {PreprocessIt
+			   {CallAfter PSession App Functr HtmlDoc}
+			  }
 			 }
 			}
 		     else
@@ -456,6 +471,47 @@ define
 	       TheResponse}
 	   end
 
+	   local
+	      P
+	      thread
+		 for C#V in {Port.new $ P} do
+		    C := V
+		 end
+	      end
+	   in
+	      proc {SetGlobalCell C V}
+		 {Port.send P C#V}
+	      end
+	   end
+	   
+	   fun {DoCaching Cache Preprocessor DefaultDuration Doc}
+	      fun {Do X} {DoCaching Cache Preprocessor DefaultDuration X} end
+	   in
+	      case Doc of cached(Fun ...) then
+		 if {Not {HasFeature Doc id}} then raise roads(cachedTagWithoutId(Doc)) end end
+		 Duration = {CondSelect Doc duration DefaultDuration}
+		 Expire
+		 Result
+	      in
+		 case {Cache getDocument(id:Doc.id result:$)}
+		 of just(Res#ExpireProc) then
+		    {Logger.trace "CACHED!"}
+		    Expire = ExpireProc
+		    Result = Res
+		 [] nothing then
+		    {Logger.trace "...not cached..."}
+		    Result = {Html.renderFragment {Do {Preprocessor {Fun}}}}
+		    {Cache setDocument(id:Doc.id duration:Duration data:Result result:Expire)}
+		 end
+		 if {HasFeature Doc expire} then
+		    {SetGlobalCell Doc.expire Expire}
+		 end
+		 Result
+	      elseif {Record.is Doc} then {Record.map Doc Do}
+	      else Doc
+	      end
+	   end
+	   
 	   fun {PostProcessCookie DefaultPath CookieName#C0}
 	      C1 = if {VirtualString.is C0} then cookie(value:C0) else C0 end
 	      %% give it a name

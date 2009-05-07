@@ -6,6 +6,7 @@ import
 export
    Render
    RenderWith
+   RenderFragment
    MapAttributes
    RemoveAttribute
    Escape
@@ -19,6 +20,10 @@ define
        DocType#"\n"#{EscapeVariables {RenderElement H}}}
    end
 
+   fun {RenderFragment Fragment}
+      {VirtualString.toString {EscapeVariables {RenderElement Fragment}}}
+   end
+   
    DefaultDocType =
    "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">"
 
@@ -78,6 +83,7 @@ define
       case H of '#'(...) then H
       [] '|'(...) then H
       [] unit(...) then {Record.map H fun {$ E} {MapAttributes E TagNotifier Fun} end}
+      elseif {Procedure.is H} then H
       else
 	 {TagNotifier {Label H} open}
 	 Res = 
