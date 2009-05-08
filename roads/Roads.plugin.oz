@@ -4,6 +4,8 @@ import
 export
    Create
 define
+   DefaultCacheDuration = 2*60*1000
+   
    fun {Create Config}
       {Module.apply
        [functor
@@ -28,6 +30,7 @@ define
 		removeTrailingSlash
 		tupleAdd:TupleAdd
 		formatTime:FormatTime
+		listToLookup:ListToLookup
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 	   Query at 'x-ozlib://wmeyer/sawhorse/common/Query.ozf'
 	   Logging(newLogger:NewLogger) at 'x-ozlib://wmeyer/sawhorse/common/Logging.ozf'
@@ -106,13 +109,32 @@ define
 	      Logger = {CreateRoadsLogger ServerConfig}
 	   end
 
-	   fun {Link Functor}
-	      if {IsChunk Functor} then {Module.apply [Functor]}.1
-	      elseif {VirtualString.is Functor} then {Module.link [Functor]}.1
-	      else Functor
+	   fun {Link Functr}
+	      if {IsChunk Functr} then {Module.apply [Functr]}.1
+	      elseif {VirtualString.is Functr} then {Module.link [Functr]}.1
+	      elseif {Functor.is Functr} then Functr
+	      else raise roads(unknownTypeAsFunctor(Functr)) end
 	      end
 	   end
-	   
+
+	   fun {LinkFunctor Functr Session}
+	      Result = {Link Functr}
+	   in
+	      if {HasFeature Result onLoad} then {Result.onLoad Session} end
+	      Result
+	   end
+
+	   %% true -> true(Feat:unit)
+	   %% true(Feat:[a b(c:e f)] -> true(Feat:unit(a:a b:b(c:e f)))
+	   fun {SimplifyPageCachingConfig Feat PageCaching}
+	      case PageCaching of false then false
+	      else
+		 {AdjoinAt PageCaching Feat
+		  {ListToLookup {CondSelect PageCaching Feat nil}}
+		 }
+	      end
+	   end
+
 	   %% Re-initialize an app from its previous state.
 	   fun {InitApp ServerConfig Functor OldResources}
 	      AppModule = {Link Functor}
@@ -128,11 +150,16 @@ define
 			     {AppModule.onRestart OldResources}
 			  else OldResources
 			  end
-	      
+	      Functors = {Record.map AppModule.functors fun {$ F} {LinkFunctor F Resources} end}	      
 	   in
 	      application(module:AppModule
 			  resources:Resources
-			  functors:{Record.map AppModule.functors Link}
+			  functors:Functors
+			  functorPageCaching:{Record.map Functors
+					      fun {$ F}
+						 {SimplifyPageCachingConfig functions
+						  {CondSelect F pageCaching false}}
+					      end}
 			  before:{CondSelect AppModule before fun {$ _ X} X end}
 			  after:{CondSelect AppModule after fun {$ _ X} X end}
 			  forkedFunctions:{CondSelect AppModule forkedFunctions true}
@@ -140,8 +167,11 @@ define
 			  useTokenInLinks:{CondSelect AppModule useTokenInLinks true}
 			  charset:{CondSelect AppModule charset "ISO-8859-1"}
 			  mimeType:{CondSelect AppModule mimeType mimeType(text html)}
-			  cacheDuration:{CondSelect AppModule cacheDuration
-					 {CondSelect Config cacheDuration 2*60*1000}}
+			  fragmentCacheDuration:{CondSelect AppModule fragmentCacheDuration
+						 {CondSelect Config fragmentCacheDuration
+						  DefaultCacheDuration}}
+			  pageCaching:{SimplifyPageCachingConfig functors {CondSelect AppModule pageCaching
+									   {CondSelect Config pageCaching false}}}
 			  logger:AppLogger
 			 )
 	   end
@@ -363,6 +393,90 @@ define
 	   end
 	   
 	   fun {ExecuteGetRequest
+		Msg=unit(app:App
+			 req:Req
+			 pathComponents:PathComponents
+			 state:RequestState
+			 inputs:Inputs
+			 session:CSession
+			 ...
+			)}
+	      AppPath = PathComponents.app
+	      FunctorPath = PathComponents.'functor'
+	      FunctorPG = RequestState.applications.AppPath.functorPageCaching.FunctorPath
+	      PageCachingConfig = if FunctorPG == nothing then App.pageCaching else FunctorPG end
+	      PageDuration
+	      PageExpire
+	      Unique
+	   in
+	      if {PageShouldBeCached PageCachingConfig PathComponents ?PageDuration ?PageExpire ?Unique} then
+		 UniquePart = case Unique of nothing then nil
+			      else {Unique {Session.'prepare' State App.logger CSession Req Inputs}.interface}
+			      end
+		 Id = {VirtualString.toAtom page#Req.originalURI#UniquePart}
+		 DocCache = RequestState.documentCache
+	      in
+		 case {DocCache getDocument(id:Id result:$)}
+		 of just(Res) then
+		    {Logger.trace "PAGE CACHED!!"}
+		    Res
+		 [] nothing then
+		    {Logger.trace "...page not cached..."}
+		    Result = {ExecuteUncachedGetRequest Msg}
+		    Expire
+		 in
+		    {DocCache setDocument(id:Id duration:PageDuration data:Result result:Expire)}
+		    {PageExpire Expire}
+		    Result
+		 end
+	      else
+		 {ExecuteUncachedGetRequest Msg}
+	      end
+	   end
+
+	   %% PageCaching: config
+	   %% PathComponents
+	   %% Duration:
+	   %% Expire: procedure to be called with expire token
+	   %% Unique: maybe(function that takes session as only argument
+	   %%               and returns a key which identifies different versions of a page)
+	   fun {PageShouldBeCached PageCaching PathComponents ?Duration ?Expire ?Unique}
+	      Functors = {CondSelect PageCaching functors nothing}
+	      Functions = {CondSelect PageCaching functions nothing}
+	      FunctorPath = PathComponents.'functor'
+	      FunctionPath = PathComponents.function
+	      fun {GetOption Opt GlobalName Default}
+		 if {HasFeature Functors FunctorPath} andthen {HasFeature Functors.FunctorPath Opt} then
+		    Functors.FunctorPath.Opt
+		 elseif {HasFeature Functions FunctionPath} andthen {HasFeature Functions.FunctionPath Opt} then
+		    Functions.FunctionPath.Opt
+		 else
+		    {CondSelect PageCaching Opt
+		     {CondSelect Config GlobalName
+		      Default}}
+		 end
+	      end
+	   in
+	      if {Label PageCaching} == false then false
+	      else
+		 Duration = {GetOption duration pageCacheDuration DefaultCacheDuration}
+		 Expire = {GetOption expire nothing proc {$ _} skip end}
+		 Unique = {GetOption unique nothing nothing}
+		 %% all functors shall be cached
+		 Functors == unit
+		 orelse
+		 %% all functions shall be cached
+		 Functions == unit
+		 orelse
+		 %% this functor shall be cached
+		 {HasFeature Functors FunctorPath}
+		 orelse
+		 %% this function shall be cached
+		 {HasFeature Functions FunctionPath}
+	      end
+	   end
+  
+	   fun {ExecuteUncachedGetRequest
 		unit(serverConfig:ServerConfig
 
 		     app:App
@@ -398,6 +512,7 @@ define
 		  FunResult
 		  DocumentCache = {Value.byNeed
 				   fun {$} {ActiveObject.newInterface RequestState.documentCache} end}
+		  
 		  fun {PreprocessIt Doc}
 		     {PreprocessHtml Doc App Functr PSession ClosureSpace PathComponents}
 		  end
@@ -421,11 +536,16 @@ define
 		     [] response(...) then FunResult
 		     [] HtmlDoc andthen MimeType == mimeType(text html) then
 			{Html.render
-			 {DoCaching DocumentCache PreprocessIt
-			  {CondSelect Functr cacheDuration App.cacheDuration}
-			  {PreprocessIt
-			   {CallAfter PSession App Functr HtmlDoc}
-			  }
+			 {DoFragmentCaching
+			  params(cache:DocumentCache
+				 preprocessor:PreprocessIt
+				 defaultFragmentId:fragment#Req.originalURI
+				 defaultFragmentDuration:{CondSelect Functr fragmentCacheDuration
+							  App.fragmentCacheDuration}
+				 document:{PreprocessIt
+					   {CallAfter PSession App Functr HtmlDoc}
+					  }
+				)
 			 }
 			}
 		     else
@@ -471,40 +591,33 @@ define
 	       TheResponse}
 	   end
 
-	   local
-	      P
-	      thread
-		 for C#V in {Port.new $ P} do
-		    C := V
-		 end
+	   fun {DoFragmentCaching
+		Ps=params(cache:Cache
+			  preprocessor:Preprocessor
+			  defaultFragmentId:DefaultId
+			  defaultFragmentDuration:DefaultFragmentDuration
+			  document:Doc
+			 )}
+	      fun {Do X}
+		 {DoFragmentCaching {AdjoinAt Ps document X}}
 	      end
-	   in
-	      proc {SetGlobalCell C V}
-		 {Port.send P C#V}
-	      end
-	   end
-	   
-	   fun {DoCaching Cache Preprocessor DefaultDuration Doc}
-	      fun {Do X} {DoCaching Cache Preprocessor DefaultDuration X} end
 	   in
 	      case Doc of cached(Fun ...) then
-		 if {Not {HasFeature Doc id}} then raise roads(cachedTagWithoutId(Doc)) end end
-		 Duration = {CondSelect Doc duration DefaultDuration}
-		 Expire
+		 Id0 = {CondSelect Doc id DefaultId}
+		 Id = if {VirtualString.is Id0} then {VirtualString.toAtom Id0} else Id0 end
+		 Duration = {CondSelect Doc duration DefaultFragmentDuration}
 		 Result
 	      in
-		 case {Cache getDocument(id:Doc.id result:$)}
-		 of just(Res#ExpireProc) then
+		 case {Cache getDocument(id:Id result:$)}
+		 of just(Res) then
 		    {Logger.trace "CACHED!"}
-		    Expire = ExpireProc
 		    Result = Res
 		 [] nothing then
+		    Expire
+		 in
 		    {Logger.trace "...not cached..."}
-		    Result = {Html.renderFragment {Do {Preprocessor {Fun}}}}
-		    {Cache setDocument(id:Doc.id duration:Duration data:Result result:Expire)}
-		 end
-		 if {HasFeature Doc expire} then
-		    {SetGlobalCell Doc.expire Expire}
+		    Result = {Html.renderFragment {Do {Preprocessor {Fun Expire}}}}
+		    {Cache setDocument(id:Id duration:Duration data:Result result:Expire)}
 		 end
 		 Result
 	      elseif {Record.is Doc} then {Record.map Doc Do}
@@ -573,7 +686,8 @@ define
 	   %% (Do not add it to form that use a url as the action handler, because
 	   %%  those form use a bookmarkable handler without secret checking.)
 	   fun {AddSecrets H}
-	      case H of form(...) andthen {AttrIsProcedure H action} then
+	      if {IsFree H} then H
+	      elsecase H of form(...) andthen {AttrIsProcedure H action} then
 		 S = {Int.toString {SecretGenerator}}
 	      in
 		 {TupleAdd H

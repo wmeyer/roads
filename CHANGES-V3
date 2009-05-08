@@ -1,13 +1,14 @@
-- initial implementation of fragment caching:
+- implementation of fragment caching:
  * option cacheDuration both global, application level and functor level
  * Example:
 fun {$ Session}
- cached(id:Name %% a name that must have been created on functor level
+ cached(id:Name %% optional; a feature (as in dictionaries)
         duration:MilliSeconds %% default: as in functor or application or global
-        expire:Cell %% optional; a cell which initially should contain a "skip" procedure;
-                    %% when called, will expire the cache fragment
-        fun {$}
+        fun {$ Expire} %% Expire: when bound to unit, expire this fragment
 	  ...contents... %% without anything that is not suitable for caching (no check implemented yet)
         end
     )
 end
+
+- page caching
+ TODO: describe

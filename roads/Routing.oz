@@ -9,7 +9,7 @@ export
    BuildPath
    StartsWith
 define
-   SpecialFunctions = [before after]
+   SpecialFunctorFeatures = [before after mimeType cacheDuration charset pageCaching onLoad]
    
    fun {StartsWith Xs Y ?Zs}
       if Y == '' then Zs = Xs true
@@ -74,7 +74,7 @@ define
 	       RemPath2 in
 	       if {StartsWith RemPath FunctorPath ?RemPath2} then
 		  for FunPath#Fun in
-		      {ToCandidates {Record.subtractList Functor SpecialFunctions}}
+		      {ToCandidates {Record.subtractList Functor SpecialFunctorFeatures}}
 		  do
 		     RemPath3 in
 		     if {StartsWith RemPath2 FunPath ?RemPath3} then

@@ -11,6 +11,7 @@ export
    Concat
    ConcatMap
    FilterRecordsByLabel
+   ListToLookup
    TupleLessThan
    CommaSep
    RegexGroups
@@ -58,10 +59,14 @@ define
       {Concat {Map Xs F}}
    end
 
-   fun {FilterRecordsByLabel Name Rs}
-      {Filter Rs fun {$ R} {Label R}==Name end}
+   fun lazy {FilterRecordsByLabel Lab Rs}
+      {Filter Rs fun {$ R} {Label R} == Lab end}
    end
 
+   fun {ListToLookup Xs}
+      {List.toRecord unit {Map Xs fun {$ X} {Label X}#X end}}
+   end
+   
    fun {TupleLessThan T1 T2}
       for I in {Arity T1} return:R default:false do
 	 if T1.I < T2.I then {R true}

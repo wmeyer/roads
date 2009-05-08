@@ -16,28 +16,33 @@ define
       meth getDocument(id:Id result:Result)
 	 Result =
 	 case {CondSelect (@cache).items Id unit}
-	 of item(expired:E data:Data expire:EP) andthen {IsFree E} then
-	    just(Data#EP)
+	 of item(expired:E data:Data ...) andthen {IsFree E} then
+	    just(Data)
 	 else nothing
+	 end
+      end
+
+      meth expire(id:Id)
+	 case {CondSelect (@cache).items Id unit}
+	 of item(expired:E ...) then E = unit
 	 end
       end
       
       %% Duration: how long the item stays valid if not expired (milliseconds)
       %% Expire: A procedure which - when called - expires the cache item associated with id
       meth setDocument(id:Id duration:Duration data:Data result:Expire)
-	 Expire =
-	 for return:Return do
+	 for break:Break do
 	    Cache = @cache
 	 in
 	    case {CondSelect Cache.items Id unit}
-	    of item(expired:E data:_ expire:EP) andthen {IsFree E} then {Return EP}
+	    of item(expired:E data:_) andthen {IsFree E} then Expire=E {Break}
 	    else
-	       NewItem
+	       NewItem = {CreateItem Data Duration}
 	       NewCache = {AddItem Cache Id NewItem}
 	    in
 	       if {self Set(cache:NewCache success:$)} then
-		  NewItem = {CreateItem Data Duration}
-		  {Return NewItem.expire}
+		  Expire = NewItem.expired
+		  {Break}
 	       end
 	    end
 	 end
@@ -52,16 +57,13 @@ define
    end
 
    fun {CreateItem Data Duration}
-      Expired
+      Expire
       thread
 	 {Delay Duration}
-	 Expired = unit
-      end
-      proc {Expire}
-	 Expired = unit
+	 Expire = unit
       end
    in
-      item(expired:Expired data:Data expire:Expire)
+      item(expired:Expire data:Data)
    end
 
    fun {AddItem cache(items:Items current:R) Id Data}
