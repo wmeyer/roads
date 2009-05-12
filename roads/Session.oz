@@ -6,7 +6,6 @@
 %%
 functor
 import
-   Cookie(getCookie:GetCookie) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
    Context at 'x-ozlib://wmeyer/roads/Context.ozf'
    Routing at 'x-ozlib://wmeyer/roads/Routing.ozf'
    Map at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Map.ozf'
@@ -15,6 +14,10 @@ import
    at 'x-ozlib://wmeyer/sawhorse/pluginSupport/NonSituatedDictionary.ozf'
    Cache(create) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cache.ozf'
    Validator(create) at 'x-ozlib://wmeyer/roads/Validator.ozf'
+   Toplevel at 'x-ozlib://wmeyer/roads/Toplevel.ozf'
+   OsTime OS
+   Util(formatTime:FormatTime) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
+   Cookie(toHeader) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
 export
    FromRequest
    NewId
@@ -37,8 +40,8 @@ define
    TmpDict = Dictionary
 
    fun {SessionIdFromRequest Req}
-      case {GetCookie Req SessionCookie} of nothing then nothing
-      [] just(cookie(value:SessionString ...)) then
+      case {Req.condGetCookie SessionCookie nothing} of nothing then nothing
+      [] SessionString then
 	 try just({String.toInt SessionString}) catch _ then nothing end
       end
    end
@@ -111,22 +114,36 @@ define
    in
       {ExternalInput P}
    end
+
+   Time = {Toplevel.makeFun0 OS.time}
+   GMTime = {Toplevel.makeFun1 OsTime.gmtime}
+   TLCellAssign = {Toplevel.makeProc0 Cell.assign}
    
-   local
-      CookiePort
-      thread
-	 for getCookie(Request Key)#Res in {Port.new $ CookiePort} do
-	    {Cookie.getCookie Request Key Res}
-	 end
-      end
+   fun {PostProcessCookie DefaultPath CookieName#C0}
+      C1 = if {VirtualString.is C0} then cookie(value:C0) else C0 end
+      %% give it a name
+      C2 = {AdjoinAt C1 name CookieName}
+      %% convert virtual string to string
+      C3 = {AdjoinAt C2 value {VirtualString.toString C1.value}}
+      %% convert expires if given as seconds
+      C4 = if {HasFeature C3 expires} andthen {Int.is C3.expires} then
+	      {AdjoinAt C3 expires {FormatTime {GMTime {Time} + C3.expires}}}
+	   else C3
+	   end
    in
+      %% add default path
+      {AdjoinAt C4 path {CondSelect C4 path DefaultPath}}
+   end
+	   
    %% Add the user interface to a session.
    fun {AddInterface State Logger S}
-      fun {GetCookieExt Key}
-	 {Port.sendRecv CookiePort getCookie(S.request Key)}
+      proc {AddCookie Key ValOrDesc}
+	 {AddHeader
+	  {Cookie.toHeader
+	   {PostProcessCookie S.defaultCookiePath Key#ValOrDesc}}}
       end
-      proc {SetCookie Key ValOrDesc}
-	 (S.cookiesToSend) := (Key#ValOrDesc)|@(S.cookiesToSend)
+      proc {AddHeader H}
+	 (S.headersToSend) := {VirtualString.toString H}|@(S.headersToSend)
       end
    in
       {AdjoinAt S interface
@@ -180,29 +197,17 @@ define
 				  NewSessionId = {NewId State}
 			       in
 				  {State.sessions move(@(S.id) NewSessionId) _}
-				  {S.setId NewSessionId}
+				  {TLCellAssign S.id NewSessionId}
 				  (S.idChanged) := true %% -> session cookie will be send
 			       end
-	   %% cookies
-	   hasCookie:fun {$ Key}
-			case {GetCookieExt Key} of just(...) then true else false end
-		     end
-	   getCookie:fun {$ Key}
-			case {GetCookieExt Key} of just(C) then C.value
-			else raise unknownCookie(key:Key) end end
-		     end
-	   getCookieExt:fun {$ Key}
-			   case {GetCookieExt Key} of just(C) then C
-			   else raise unknownCookie(key:Key) end end
-			end
-	   setCookie:SetCookie
+	   %% response
+	   response:response(addCookie:AddCookie addHeader:AddHeader)
 	   %% logging
 	   logTrace:Logger.trace
 	   logError:Logger.error
 	   )
        }
       }
-   end
    end
    
    fun {ExternalInput X}
@@ -244,23 +249,11 @@ define
 	      contexts:{Context.newDict}
 	      request:unit
 	      id:IdCell
-	      setId:local %% make id settable from subordinate space
-		       IdPort
-		    in
-		       thread
-			  for NewId in {Port.new $ IdPort} do
-			     IdCell := NewId
-			  end
-		       end
-		       proc {$ Id}
-			  {Port.send IdPort Id}
-		       end
-		    end
 	     )
    end
 
    %% Prepare a session to be used in a user-defined function,
-   fun {PrepareSession State Logger Session Req Inputs}
+   fun {PrepareSession State Logger Session Req Inputs DefaultCookiePath}
       RealInputs
       S2
    in
@@ -278,7 +271,8 @@ define
 	 tmp#{TmpDict.new}
 	 request#Req
 	 idChanged#{NewCell false}
-	 cookiesToSend#{NewCell nil}
+	 headersToSend#{NewCell nil}
+	 defaultCookiePath#DefaultCookiePath
 	 contexts#{Context.cloneDict Session.contexts}
 	]}
       }

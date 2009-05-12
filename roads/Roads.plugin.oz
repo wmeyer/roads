@@ -12,7 +12,7 @@ define
 	import
 	   Module OS
 	   OsTime
-	   Cookie(setCookie) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
+	   Cookie(toHeader) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
 	   IdIssuer(create) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/IdIssuer.ozf'
 	   Session at 'x-ozlib://wmeyer/roads/Session.ozf'
 	   Context(forAll) at 'x-ozlib://wmeyer/roads/Context.ozf'
@@ -25,11 +25,11 @@ define
 		    expiresHeader:ExpiresHeader
 		    redirectResponse:RedirectResponse
 		    notFoundResponse:NotFoundResponse
+		    addHeader
 		   ) at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
 	   Util(intercalate:Intercalate
 		removeTrailingSlash
 		tupleAdd:TupleAdd
-		formatTime:FormatTime
 		listToLookup:ListToLookup
 	       ) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 	   Query at 'x-ozlib://wmeyer/sawhorse/common/Query.ozf'
@@ -113,6 +113,7 @@ define
 	      if {IsChunk Functr} then {Module.apply [Functr]}.1
 	      elseif {VirtualString.is Functr} then {Module.link [Functr]}.1
 	      elseif {Functor.is Functr} then Functr
+	      elseif {Record.is Functr} then Functr
 	      else raise roads(unknownTypeAsFunctor(Functr)) end
 	      end
 	   end
@@ -364,13 +365,14 @@ define
 	   end
    
 	   fun {AddSessionCookie Resp CSession PathComponents}
-	      {Cookie.setCookie Resp
-	       cookie(name:Session.sessionCookie
-		      value:{Int.toString @(CSession.id)}
-		      'Path':{Routing.buildPath [PathComponents.app]}
-		      'HTTPOnly':unit
-		     )
-	      }
+	      {Response.addHeader Resp
+	       {Cookie.toHeader
+		cookie(name:Session.sessionCookie
+		       value:{Int.toString @(CSession.id)}
+		       'Path':{Routing.buildPath [PathComponents.app]}
+		       'HTTPOnly':unit
+		      )
+	       }}
 	   end
 
 	   %% so that we can send an exception from a subordinate space
@@ -410,8 +412,11 @@ define
 	      Unique
 	   in
 	      if {PageShouldBeCached PageCachingConfig PathComponents ?PageDuration ?PageExpire ?Unique} then
+		 DefaultCookiePath = {Routing.buildPath [PathComponents.app]}
 		 UniquePart = case Unique of nothing then nil
-			      else {Unique {Session.'prepare' State App.logger CSession Req Inputs}.interface}
+			      else
+				 {Unique {Session.'prepare' State App.logger
+					  CSession Req Inputs DefaultCookiePath}.interface}
 			      end
 		 Id = {VirtualString.toAtom page#Req.originalURI#UniquePart}
 		 DocCache = RequestState.documentCache
@@ -494,20 +499,22 @@ define
 		     state:RequestState
 		    )}
 	      Res
-	      CookiesToSend
+	      HeadersToSend
 	      TheResponse
 	      MimeType = {CondSelect Functr mimeType App.mimeType}
 	   in
 	      {Context.forAll CSession closureCalled(ClosureId)}
 	      Res#
 	      SessionIdChanged#
-	      CookiesToSend
+	      HeadersToSend
 	      =
 	      {Speculative.evalInSpace ClosureSpace
 	       fun {$}
 		  %% Session must be prepared in the space
 		  %% to make the private dict local
-		  PSession = {Session.'prepare' State App.logger CSession Req Inputs}
+		  DefaultCookiePath = {Routing.buildPath [PathComponents.app]}
+		  PSession =
+		  {Session.'prepare' State App.logger CSession Req Inputs DefaultCookiePath}
 		  RealFun = {NewCell {CallBefore PSession App Functr Function}}
 		  FunResult
 		  DocumentCache = {Value.byNeed
@@ -560,7 +567,7 @@ define
 		  end
 		  #
 		  @(PSession.idChanged)#
-		  @(PSession.cookiesToSend)
+		  @(PSession.headersToSend)
 	       end
 	      }
 	      %% create response object (or propagate exception)
@@ -582,13 +589,8 @@ define
 		   {ExpiresHeader {OsTime.gmtime {OS.time}+App.pagesExpireAfter}}]
 		  withBody}
 	      end
-	      %% add application cookies
-	      {FoldR CookiesToSend
-	       fun {$ MyCookie Resp}
-		  {Cookie.setCookie Resp
-		   {PostProcessCookie {Routing.buildPath [PathComponents.app]} MyCookie}}
-	       end
-	       TheResponse}
+	      %% add application headers (incl. cookies)
+	      {FoldL HeadersToSend Response.addHeader TheResponse}
 	   end
 
 	   fun {DoFragmentCaching
@@ -623,22 +625,6 @@ define
 	      elseif {Record.is Doc} then {Record.map Doc Do}
 	      else Doc
 	      end
-	   end
-	   
-	   fun {PostProcessCookie DefaultPath CookieName#C0}
-	      C1 = if {VirtualString.is C0} then cookie(value:C0) else C0 end
-	      %% give it a name
-	      C2 = {AdjoinAt C1 name CookieName}
-	      %% convert virtual string to string
-	      C3 = {AdjoinAt C2 value {VirtualString.toString C1.value}}
-	      %% convert expires if given as seconds
-	      C4 = if {HasFeature C3 expires} andthen {Int.is C3.expires} then
-		      {AdjoinAt C3 expires {FormatTime {OsTime.gmtime {OS.time} + C3.expires}}}
-		   else C3
-		   end
-	   in
-	      %% add default path
-	      {AdjoinAt C4 path {CondSelect C4 path DefaultPath}}
 	   end
 	   
 	   %% .../abc/def/ghi?a=c;b=d -> .../abc/def

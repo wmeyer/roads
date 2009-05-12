@@ -1,12 +1,14 @@
 functor
 import
-   Util(commaSep:CommaSep) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
+   Util(commaSep:CommaSep)
+   at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
    Response(badRequestResponse:BadRequestResponse
 	    expectationFailedResponse:ExpectationFailedResponse)
    at 'x-ozlib://wmeyer/sawhorse/common/Response.ozf'
    Search
    ExtraString(strip:Strip) at 'x-oz://system/String.ozf'
    URL
+   Cookie at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
 export
    ParseRequest
 define
@@ -18,9 +20,11 @@ define
 	    ReqURI = {Do Config {ParseReqURI URI}}
 	    ReqHttpVer = {Do Config {ParseHttpVersion HttpVersion}}
 	    ReqHeaders = {ParseHeaders Config Headers}
+	    Cookies = {ParseCookies ReqHeaders}
+	    Request = request(cmd:ReqCmd uri:ReqURI originalURI:URI originalHeaders:Headers
+			      httpVersion:ReqHttpVer headers:ReqHeaders cookies:Cookies)
 	 in
-	    ok(request(cmd:ReqCmd uri:ReqURI originalURI:URI
-		       httpVersion:ReqHttpVer headers:ReqHeaders))
+	    ok({AddRequestInterface Request})
 	 catch bad(ErrorResponse) then
 	    bad(ErrorResponse)
 	 end
@@ -29,6 +33,31 @@ define
       end
    end
 
+   VS2A = VirtualString.toAtom
+   
+   fun {AddRequestInterface Req}
+      ReqHeaders = Req.headers
+      Cookies = Req.cookies
+      fun {HasHeader Key} {HasFeature ReqHeaders {VS2A Key}} end
+      fun {GetHeader Key} ReqHeaders.{VS2A Key}.1 end
+      fun {CondGetHeader Key Def} {CondSelect ReqHeaders {VS2A Key} [Def]}.1 end
+      fun {GetAllHeaders Key} ReqHeaders.{VS2A Key} end
+      fun {CondGetAllHeaders Key Def} {CondSelect ReqHeaders {VS2A Key} Def} end
+      fun {HasCookie Key} {HasFeature Cookies {VS2A Key}} end
+      fun {GetCookieExt Key} Cookies.{VS2A Key} end
+      fun {CondGetCookieExt Key Def} {CondSelect Cookies {VS2A Key} Def} end
+      fun {GetCookie Key} Cookies.{VS2A Key}.value end
+      fun {CondGetCookie Key Def}
+	 {CondSelect {CondSelect Cookies {VS2A Key} unit} value Def}
+      end
+   in
+      {Adjoin Req
+       request(hasCookie:HasCookie getCookie:GetCookie condGetCookie:CondGetCookie
+	       getCookieExt:GetCookieExt condGetCookieExt:CondGetCookieExt
+	       hasHeader:HasHeader getHeader:GetHeader condGetHeader:CondGetHeader
+	       getAllHeaders:GetAllHeaders condGetAllHeaders:CondGetAllHeaders)}
+   end
+   
    fun {Do Config MaybeValue}
       case MaybeValue of nothing then raise bad({BadRequestResponse Config}) end
       [] just(X) then X
@@ -89,10 +118,23 @@ define
    %% must throw bad if parsing fails
    fun {ParseHeaders Config Hs}
       case {Sequence {Map Hs fun {$ H} {ParseHeader Config H} end}}
-      of ok(Hs) then Hs
+      of ok(Hs) then
+	 Dict = {Dictionary.new}
+      in
+	 for T#C in Hs do
+	    Dict.T := C|{CondSelect Dict T nil}
+	 end
+	 {Dictionary.toRecord headers Dict}
       end
    end
 
+   fun {ParseCookies Headers}
+      CookieHeaders = {CondSelect Headers cookie nil}
+      CookiesPerHeader = {Map CookieHeaders Cookie.fromHeader}
+   in
+      {FoldL CookiesPerHeader Adjoin cookies}
+   end
+   
    %% throws if some element turns out "bad"
    fun {Sequence Ys}
       fun {Do Xs}
@@ -111,73 +153,38 @@ define
       HeaderType Val
    in
       {List.takeDropWhile Header fun {$ H} H \= &: end HeaderType Val}
-      case Val of &:|Value then {ParseHeaderAs Config HeaderType
-				 {Strip Value unit}}
+      case Val of &:|Value then
+	 Type = {String.toAtom {Map HeaderType Char.toLower}}
+      in
+	 {ParseHeaderAs Config Type {Strip Value unit}}
       else bad({BadRequestResponse Config})
       end
    end
 
    fun {ParseHeaderAs Config Type Value}
-      case {Map Type Char.toLower}
-      of "connection"           then {ParseConnection Value}
-      [] "date"                 then ok(date(Value))
-      [] "pragma"               then ok(pragma(Value))
-      [] "trailer"              then ok(trailer(Value))
-      [] "transfer-encoding"    then ok(transferEncoding(Value))
-      [] "upgrade"              then ok(upgrade(Value))
-      [] "via"                  then ok(via(Value))
-      [] "warning"              then ok(warning(Value))
-      [] "content-type"         then ok(contentType(Value))
-      [] "content-length"       then {ParseLength Config Value}
-      [] "accept"               then ok(accept(Value))
-      [] "accept-charset"       then ok(acceptCharset(Value))
-      [] "accept-encoding"      then ok(acceptEncoding(Value))
-      [] "accept-language"      then ok(acceptLanguage(Value))
-      [] "authorization"        then ok(authorization(Value))
-      [] "cache-control"        then ok(cacheControl(Value))
-      [] "expect"               then {ParseExpect Config Value}
-      [] "from"                 then ok('from'(Value))
-      [] "host"                 then {ParseHost Config Value}
-      [] "if-match"             then ok(ifMatch(Value))
-      [] "if-modified-since"    then ok(ifModififiedSince(Value))
-      [] "if-none-match"        then ok(ifNoneMatch(Value))
-      [] "if-range"             then ok(ifRange(Value))
-      [] "if-unmodified-since"  then ok(ifUnmodififiedSince(Value))
-      [] "max-forwards"         then ok(maxForwards(Value))
-      [] "proxy-authorization"  then ok(proxyAuthorization(Value))
-      [] "range"                then ok(range(Value))
-      [] "referer"              then ok(referer(Value))
-      [] "te"                   then ok(te(Value))
-      [] "user-agent"           then ok(userAgent(Value))
-      [] "cookie"               then ok(cookie(Value))
-      [] Other                  then ok(extensionHeader(Other Value))
+      case Type of connection then {ParseConnection Value}
+      [] 'content-length' then {ParseLength Config Value}
+      [] expect then {ParseExpect Config Value}
+      [] host then {ParseHost Config Value}
+      else ok(Type#Value)
       end
    end
 
    fun {ParseConnection S}
-      ok(connection(
-	    {Map {CommaSep S}
-	     fun {$ T}
-		case T of "close" then close
-		[] "keep-alive" then keepAlive
-		[] Other then other(Other)
-		end
-	     end
-	    })
-	)
+      ok(connection#{Map {CommaSep S} String.toAtom})
    end
 
    fun {ParseExpect Config S}
       case {CommaSep S}
-      of ["100-continue"] then ok(expect(continue))
+      of ["100-continue"] then ok(expect#continue)
       else bad({ExpectationFailedResponse Config})
       end
    end
    
    fun {ParseHost Config S}
       case {String.tokens S &:}
-      of [Host] then ok(host(Host 80))
-      [] [Host Port] then ok(host(Host {StringToInt Port}))
+      of [Host] then ok(host#host(name:Host port:80))
+      [] [Host Port] then ok(host#host(name:Host port:{StringToInt Port}))
       else bad({BadRequestResponse Config})
       end
    end
@@ -186,7 +193,7 @@ define
       Rem
       Len = {Int S Rem}
    in
-      if Rem == nil then ok(contentLength(Len))
+      if Rem == nil then ok('content-length'#Len)
       else bad({BadRequestResponse Config})
       end
    end

@@ -5,6 +5,7 @@ import
    Html(render:RenderHtml)
    OS Open
 export
+   AddHeader
    SendResponse
    ContentTypeHeader
    LastModifiedHeader
@@ -46,6 +47,10 @@ export
    GatewayTimeOutResponse
    VersionNotSupportedResponse
 define
+   fun {AddHeader Resp H}
+      {AdjoinAt Resp headers H|Resp.headers}
+   end
+   
    proc {SendResponse Socket
 	 response(code:Code headers:Headers coding:TES body:Body sendBody:DoSendBody)}
       proc {SendL L} {SendLine Socket L} end

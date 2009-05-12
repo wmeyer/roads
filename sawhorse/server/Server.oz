@@ -1,8 +1,7 @@
 functor
 import
    AsyncExcept(raiseTo:RaiseTo unblocked:Unblocked safeThread:SafeThread)
-   Util(concatMap:ConcatMap replicate:Replicate
-	filterRecordsByLabel:FilterRecordsByLabel
+   Util(concat:Concat replicate:Replicate
 	intercalate:Intercalate
 	compareCaseInsensitive:CompareCaseInsensitive
 	tupleLessThan:TupleLessThan) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
@@ -287,10 +286,7 @@ define
       in
 	 {SendResponse ClientSocket Response}
 	 local
-	    ConnectionHeaders = {ConcatMap
-				 {FilterRecordsByLabel connection Req.headers}
-				 fun {$ connection(Cs)} Cs end
-				}
+	    ConnectionHeaders = {Concat {Req.condGetAllHeaders connection nil}}
 	    CloseConnection =
 	    {Member close ConnectionHeaders}
 	    orelse
@@ -310,15 +306,12 @@ define
       Req = {GetRequest ClientSocket}
    in
       case {ParseRequest Config Req}
-      of ok(Request) then
+      of ok(PReq) then
 	 {Config.trace ok}
-	 contentLength(Len) =
-	 {CondSelect {FilterRecordsByLabel contentLength Request.headers}
-	  1
-	  contentLength(0)}
+	 Len = {PReq.condGetHeader 'content-length' 0}
 	 Body = {Replicate Len fun {$} {ClientSocket getC($)} end}
       in
-	 ok({Adjoin request(body:Body) Request})
+	 ok({Adjoin request(body:Body) PReq})
       [] R then {Config.trace notOk} R
       end
    end
@@ -374,8 +367,8 @@ define
       Response
    end
 
-   fun {CheckHostHeader Config request(httpVersion:Ver headers:Headers ...) ?ErrorResponse}
-      case {GetHost Headers}
+   fun {CheckHostHeader Config Req=request(httpVersion:Ver ...) ?ErrorResponse}
+      case {GetHost Req}
       of nil andthen {TupleLessThan Ver 1#1} then true
       [] [Host] andthen (Host == Config.serverName
 			 orelse {Member Host Config.serverAlias}) then true
@@ -385,8 +378,8 @@ define
       end
    end
 
-   fun {GetHost Headers}
-      {Map {FilterRecordsByLabel host Headers} fun {$ host(H _)} H end}
+   fun {GetHost Req}
+      {Map {Req.condGetAllHeaders host nil} fun {$ host(name:H ...)} H end}
    end
 
    fun {EqualOrEmpty A B}
@@ -409,14 +402,14 @@ define
    end
 
    HandleGetRequest = {MakeRequestHandler
-		       fun {$ Config Req=request(uri:URI headers:Hs ...) BodyFlag}
+		       fun {$ Config Req=request(uri:URI ...) BodyFlag}
 			  case {Plugin.find Config Req}
 			  of nothing then
-			     if Req.uri.query \= unit then {NotFoundResponse Config}
-			     else {GetFile Config {MakeRelativePath URI.path} BodyFlag Hs}
+			     if URI.query \= unit then {NotFoundResponse Config}
+			     else {GetFile Config {MakeRelativePath URI.path} BodyFlag}
 			     end
 			  [] just(P) then
-			     Values = {Query.parse Req.uri.query}
+			     Values = {Query.parse URI.query}
 			  in
 			     {Plugin.call Config P handleGetRequest Req Values}
 			  end
@@ -438,7 +431,7 @@ define
       &/|{Intercalate Xs "/"}
    end
 
-   fun {GetFile Config Path BodyFlag Headers}
+   fun {GetFile Config Path BodyFlag}
       case {FindRealFilename Config {PrependDocRoot Config Path}}
       of ErrorResp=response(...) then ErrorResp
       [] fileInfo(name:Filename stat:Status) then

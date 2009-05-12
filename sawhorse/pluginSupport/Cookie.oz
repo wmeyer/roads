@@ -2,20 +2,17 @@ functor
 import
    Regex at 'x-oz://contrib/regex'
    ExtraString(strip:Strip) at 'x-oz://system/String.ozf'
-   Util(nubBy:NubBy
-	filterRecordsByLabel:FilterRecordsByLabel)
+   Util(nubBy:NubBy)
    at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
 export
    FromHeader
    ToHeader
-   GetCookie
-   SetCookie
 define
    %% Parses cookies sent from the client.
    %% Returns: cookies(
    %%            'cookie1':cookie(value:Val1 path:"/" domain:nil ... version:0)
    %%                 )
-   fun {FromHeader cookie(Val)}
+   fun {FromHeader Val}
       KeyValuePairs = {Map {RegexSplit ",|;" Val}
 		       fun {$ Line} {Map {Token Line &=} StripWS} end}
       Version = {NewCell 0}
@@ -93,17 +90,4 @@ define
 	}}
       }
    end
-
-   fun {GetCookie Request CookieName}
-      for Header in {FilterRecordsByLabel cookie Request.headers}
-	 return:R default:nothing do
-	 Cookies = {FromHeader Header}
-      in
-	 if {HasFeature Cookies CookieName} then {R just(Cookies.CookieName)} end
-      end
-   end
-
-   fun {SetCookie Response Cookie}
-      {AdjoinAt Response headers {ToHeader Cookie}|Response.headers}
-   end   
 end
