@@ -1,9 +1,7 @@
 functor
 export
-   MakeProc0
-   MakeProc2
-   MakeFun0
-   MakeFun1
+   MakeProcedure
+   MakeFunction
 define
    fun {CreateToplevelFunApplier}
       ApplyPort
@@ -32,6 +30,12 @@ define
       end
    end
 
+   fun {MakeFunction Fun}
+      {MakeFuns.({Procedure.arity Fun}-1) Fun}
+   end
+
+   MakeFuns = unit(0:MakeFun0 1:MakeFun1)
+
    fun {MakeFun0 Proc}
       A = {CreateToplevelFunApplier}
    in
@@ -39,7 +43,7 @@ define
 	 {A Proc nil}
       end
    end
-
+   
    fun {MakeFun1 Proc}
       A = {CreateToplevelFunApplier}
    in
@@ -47,6 +51,12 @@ define
 	 {A Proc [Arg1]}
       end
    end
+
+   fun {MakeProcedure Proc}
+      {MakeProcs.{Procedure.arity Proc} Proc}
+   end
+
+   MakeProcs = unit(0:MakeProc0 2:MakeProc2)
 
    fun {MakeProc0 Proc}
       A = {CreateToplevelProcApplier}

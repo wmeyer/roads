@@ -8,8 +8,8 @@ export
    Test
    PageCaching
 define
-   TLUnify = {Toplevel.makeProc2 Value.'='}
-   Time = {Toplevel.makeFun0 OS.time}
+   TLUnify = {Toplevel.makeProcedure Value.'='}
+   Time = {Toplevel.makeFunction OS.time}
 
    ExpirePage = {NewCell unit}
 
@@ -20,11 +20,8 @@ define
    end
    
    fun {Test Session}
-      html(
-	 body(
-	    p("hello "#{Time})
-	    cached(
-	       fun {$ ExpireFragment}
+      p("hello "#{Time}
+	cached(fun {$ ExpireFragment}
 		  p("fragment "#{Time} br
 		    a("Expire fragment"
 		      href:fun {$ _}
@@ -34,14 +31,14 @@ define
 		     )
 		   )
 	       end
-	       )
-	    a("Expire page"
-	      href:fun {$ _}
-		      {TLUnify @ExpirePage unit}
-		      redirect(303 url(function:test))
-		   end
-	     )
-	    ))
+	      )
+	a("Expire page"
+	  href:fun {$ _}
+		  {TLUnify @ExpirePage unit}
+		  redirect(303 url(function:test))
+	       end
+	 )
+       )
    end
 end
 
