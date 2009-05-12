@@ -117,7 +117,7 @@ define
 
    Time = {Toplevel.makeFun0 OS.time}
    GMTime = {Toplevel.makeFun1 OsTime.gmtime}
-   TLCellAssign = {Toplevel.makeProc0 Cell.assign}
+   TLCellAssign = {Toplevel.makeProc2 Cell.assign}
    
    fun {PostProcessCookie DefaultPath CookieName#C0}
       C1 = if {VirtualString.is C0} then cookie(value:C0) else C0 end

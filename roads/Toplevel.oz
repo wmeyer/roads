@@ -1,6 +1,7 @@
 functor
 export
    MakeProc0
+   MakeProc2
    MakeFun0
    MakeFun1
 define
@@ -52,6 +53,14 @@ define
    in
       proc {$}
 	 {Wait {A Proc nil}}
+      end
+   end
+
+   fun {MakeProc2 Proc}
+      A = {CreateToplevelProcApplier}
+   in
+      proc {$ A1 A2}
+	 {Wait {A Proc [A1 A2]}}
       end
    end
 end

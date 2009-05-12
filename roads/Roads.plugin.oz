@@ -401,6 +401,7 @@ define
 			 state:RequestState
 			 inputs:Inputs
 			 session:CSession
+			 closureId:CId
 			 ...
 			)}
 	      AppPath = PathComponents.app
@@ -411,7 +412,9 @@ define
 	      PageExpire
 	      Unique
 	   in
-	      if {PageShouldBeCached PageCachingConfig PathComponents ?PageDuration ?PageExpire ?Unique} then
+	      if CId == ~1 andthen
+		 {PageShouldBeCached PageCachingConfig PathComponents
+		  ?PageDuration ?PageExpire ?Unique} then
 		 DefaultCookiePath = {Routing.buildPath [PathComponents.app]}
 		 UniquePart = case Unique of nothing then nil
 			      else
