@@ -12,12 +12,12 @@ define
    Time = {Toplevel.makeFun0 OS.time}
 
    ExpirePage = {NewCell unit}
-   PageCaching = unit(functions:[test]
-		      expire:proc {$ E} ExpirePage := E end
-		     )
 
-%   fun {PageCaching Session}
-%   end
+   fun {PageCaching Session}
+      unit(functions:[test]
+	   expire:proc {$ E} ExpirePage := E end
+	  )
+   end
    
    fun {Test Session}
       html(

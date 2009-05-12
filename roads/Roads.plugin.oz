@@ -159,7 +159,10 @@ define
 			  functorPageCaching:{Record.map Functors
 					      fun {$ F}
 						 {SimplifyPageCachingConfig functions
-						  {CondSelect F pageCaching false}}
+						  {{CondSelect F pageCaching
+						    fun {$ _} false end}
+						  Resources}
+						 }
 					      end}
 			  before:{CondSelect AppModule before fun {$ _ X} X end}
 			  after:{CondSelect AppModule after fun {$ _ X} X end}
@@ -171,8 +174,10 @@ define
 			  fragmentCacheDuration:{CondSelect AppModule fragmentCacheDuration
 						 {CondSelect Config fragmentCacheDuration
 						  DefaultCacheDuration}}
-			  pageCaching:{SimplifyPageCachingConfig functors {CondSelect AppModule pageCaching
-									   {CondSelect Config pageCaching false}}}
+			  pageCaching:{SimplifyPageCachingConfig functors
+				       {{CondSelect AppModule pageCaching
+					 {CondSelect Config pageCaching
+					  fun {$ _} false end}} Resources}}
 			  logger:AppLogger
 			 )
 	   end
