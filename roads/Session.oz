@@ -19,8 +19,10 @@ import
    Util(formatTime:FormatTime) at 'x-ozlib://wmeyer/sawhorse/common/Util.ozf'
    Cookie(toHeader) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
 export
+   get:GetSession
+   add:AddSession
+   idFromRequest:SessionIdFromRequest
    FromRequest
-   NewId
    SessionCookie
    new:NewSession
    NewCache
@@ -52,6 +54,10 @@ define
       end
    end
 
+   proc {AddSession State Id Session}
+      _ = {State.sessions condGet(Id Session)}
+   end
+
    %% Request -> Maybe Session
    %% (Always takes the current global state, not session-specific state.)
    fun {FromRequest State Req}
@@ -60,15 +66,6 @@ define
       end
    end
    
-   %% (Always takes the current global state, not session-specific state.)
-   fun {NewId State}
-      Id = {State.sessionIdIssuer}
-   in
-      case {GetSession State Id} of nothing then Id
-      else {NewId State}
-      end
-   end
-
    %% This is used when Session.validateParameters is called; not when automatic
    %% validation from form submission is used.
    proc {ValidateParameters Spec Params}
@@ -117,7 +114,6 @@ define
 
    Time = {Toplevel.makeFunction OS.time}
    GMTime = {Toplevel.makeFunction OsTime.gmtime}
-   TLCellAssign = {Toplevel.makeProcedure Cell.assign}
    
    fun {PostProcessCookie DefaultPath CookieName#C0}
       C1 = if {VirtualString.is C0} then cookie(value:C0) else C0 end
@@ -192,14 +188,6 @@ define
 				      end
 	   %% request
 	   request:S.request
-	   %%
-	   regenerateSessionId:proc{$}
-				  NewSessionId = {NewId State}
-			       in
-				  {State.sessions move(@(S.id) NewSessionId) _}
-				  {TLCellAssign S.id NewSessionId}
-				  (S.idChanged) := true %% -> session cookie will be send
-			       end
 	   %% response
 	   response:response(addCookie:AddCookie addHeader:AddHeader)
 	   %% logging
@@ -229,27 +217,27 @@ define
       {TmpDict.removeAll Session.tmp}
    end
    
-   fun {NewCache Config}
-      {Cache.create {CondSelect Config sessionDuration 60*60*1000} Destroy}
+   fun {NewCache SessionDuration}
+      {Cache.create SessionDuration Destroy}
    end
    
    fun {NewSession State Path Id}
-      just(App) = {Routing.getApplication State Path}
-      Closures = {Map.new}
-      IdCell = {NewCell Id}
-   in
-      session(closures:Closures
-	      removeClosure:proc {$ CId} {Map.remove Closures CId} end 
-	      private:{PrivateDict.new}
-	      shared:{SharedDict.new}
-	      tmp:{TmpDict.new}
-	      params:unit
-	      interface:App.resources
-	      state:State
-	      contexts:{Context.newDict}
-	      request:unit
-	      id:IdCell
-	     )
+      case {Routing.getApplication State Path} of nothing then nothing
+      [] just(App) then
+	 Closures = {Map.new}
+      in
+	 session(closures:Closures
+		 removeClosure:proc {$ CId} {Map.remove Closures CId} end 
+		 private:{PrivateDict.new}
+		 shared:{SharedDict.new}
+		 tmp:{TmpDict.new}
+		 params:unit
+		 interface:App.resources
+		 state:State
+		 contexts:{Context.newDict}
+		 request:unit
+		)
+      end
    end
 
    %% Prepare a session to be used in a user-defined function,
@@ -270,7 +258,6 @@ define
 	 private#{PrivateDict.clone Session.private}
 	 tmp#{TmpDict.new}
 	 request#Req
-	 idChanged#{NewCell false}
 	 headersToSend#{NewCell nil}
 	 defaultCookiePath#DefaultCookiePath
 	 contexts#{Context.cloneDict Session.contexts}
