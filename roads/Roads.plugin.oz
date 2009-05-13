@@ -118,13 +118,6 @@ define
 	      end
 	   end
 
-	   fun {LinkFunctor Functr Session}
-	      Result = {Link Functr}
-	   in
-	      if {HasFeature Result onLoad} then {Result.onLoad Session} end
-	      Result
-	   end
-
 	   %% true -> true(Feat:unit)
 	   %% true(Feat:[a b(c:e f)] -> true(Feat:unit(a:a b:b(c:e f)))
 	   fun {SimplifyPageCachingConfig Feat PageCaching}
@@ -151,7 +144,7 @@ define
 			     {AppModule.onRestart OldResources}
 			  else OldResources
 			  end
-	      Functors = {Record.map AppModule.functors fun {$ F} {LinkFunctor F Resources} end}	      
+	      Functors = {Record.map AppModule.functors Link}
 	   in
 	      application(module:AppModule
 			  resources:Resources

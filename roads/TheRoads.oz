@@ -1,6 +1,7 @@
 functor
 import
-   ProcessSingleton
+   RemoteFunctor at 'x-ozlib://wmeyer/roads/RemoteFunctor.ozf'
+   Remote
 export
    Reset
    SetOption
@@ -12,8 +13,11 @@ export
    IsRunning
    ShutDown
    ColdRestart
+
+   Close
 define
-   Instance = {ProcessSingleton.run 'x-ozlib://wmeyer/roads/Roads.ozf'}
+   RemoteManager = {New Remote.manager init}
+   Instance = {RemoteFunctor.create 'x-ozlib://wmeyer/roads/Roads.ozf' RemoteManager}
    {Instance.setSawhorseOption errorLogFile "http-error.log"}
    Reset = Instance.reset
    SetOption = Instance.setOption
@@ -23,6 +27,12 @@ define
    RegisterApplication = Instance.registerApplication
    Run = Instance.run
    IsRunning = Instance.isRunning
+   proc {Close}
+      try
+	 {ShutDown}
+      catch _ then skip end
+      {RemoteManager close}
+   end
    ShutDown = Instance.shutDown
    ColdRestart = Instance.coldRestart
 end

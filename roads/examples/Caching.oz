@@ -14,7 +14,7 @@ define
    ExpirePage = {NewCell unit}
 
    fun {PageCaching Session}
-      unit(functions:[test]
+      true(functions:[test]
 	   expire:proc {$ E} ExpirePage := E end
 	  )
    end
