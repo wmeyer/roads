@@ -22,7 +22,6 @@ export
    get:GetSession
    add:AddSession
    idFromRequest:SessionIdFromRequest
-   FromRequest
    SessionCookie
    new:NewSession
    NewCache
@@ -58,14 +57,6 @@ define
       _ = {State.sessions condGet(Id Session)}
    end
 
-   %% Request -> Maybe Session
-   %% (Always takes the current global state, not session-specific state.)
-   fun {FromRequest State Req}
-      case {SessionIdFromRequest Req} of nothing then nothing
-      [] just(Id) then {GetSession State Id}
-      end
-   end
-   
    %% This is used when Session.validateParameters is called; not when automatic
    %% validation from form submission is used.
    proc {ValidateParameters Spec Params}
