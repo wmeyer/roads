@@ -121,7 +121,9 @@ define
       %% add default path
       {AdjoinAt C4 path {CondSelect C4 path DefaultPath}}
    end
-	   
+
+   TLCellAssign = {Toplevel.makeProcedure Assign}
+   
    %% Add the user interface to a session.
    fun {AddInterface State Logger S}
       proc {AddCookie Key ValOrDesc}
@@ -184,6 +186,8 @@ define
 	   %% logging
 	   logTrace:Logger.trace
 	   logError:Logger.error
+	   %%
+	   regenerateSessionId:proc {$} {TLCellAssign S.changeSessionId true} end
 	   )
        }
       }
@@ -232,7 +236,7 @@ define
    end
 
    %% Prepare a session to be used in a user-defined function,
-   fun {PrepareSession State Logger Session Req Inputs DefaultCookiePath}
+   fun {PrepareSession State Logger Session Req Inputs DefaultCookiePath ChangeSessionId}
       RealInputs
       S2
    in
@@ -252,6 +256,7 @@ define
 	 headersToSend#{NewCell nil}
 	 defaultCookiePath#DefaultCookiePath
 	 contexts#{Context.cloneDict Session.contexts}
+	 changeSessionId#ChangeSessionId
 	]}
       }
    end

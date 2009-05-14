@@ -153,7 +153,8 @@ define
    end
 
    %% returns Maybe( Response )
-   fun {HandleRequest Type Req=request(uri:URI ...) Inputs SessionId NextSessionId}
+   fun {HandleRequest Type Req=request(uri:URI ...) Inputs
+	SessionId NextSessionIdCandidate SessionIdChanged}
       Path = URI.path
       RSession
       case {Session.get State SessionId} of just(S) then
@@ -194,6 +195,7 @@ define
 		     closureId:~1
 		     closureSpace:unit
 		     state:RequestState
+		     changeSessionId:SessionIdChanged
 		    )}
 	    elseif Type == post then
 	       %% POST REQUEST
@@ -251,6 +253,7 @@ define
 					   Closure.space
 					end
 			   state:RequestState
+			   changeSessionId:SessionIdChanged
 			  )}
 		  elseif Type == post then
 		     %% POST REQUEST (redirect to get request of closure
@@ -276,8 +279,12 @@ define
 	    end
 	 end
       in
-	 {State.sessions move(SessionId NextSessionId) _}
-	 just( {AddSessionCookie TheResponse NextSessionId PathComponents} )
+	 if @SessionIdChanged then
+	    {State.sessions move(SessionId NextSessionIdCandidate) _}
+	    just( {AddSessionCookie TheResponse NextSessionIdCandidate PathComponents} )
+	 else
+	    just( TheResponse )
+	 end
       end
    end
 
@@ -348,8 +355,9 @@ define
 	 DefaultCookiePath = {Routing.buildPath [PathComponents.app]}
 	 UniquePart = case Unique of nothing then nil
 		      else
-			 {Unique {Session.'prepare' State App.logger
-				  CSession Req Inputs DefaultCookiePath}.interface}
+			 {Unique
+			  {Session.'prepare' State App.logger
+			   CSession Req Inputs DefaultCookiePath {NewCell false}}.interface}
 		      end
 	 Id = {VirtualString.toAtom page#Req.originalURI#UniquePart}
 	 DocCache = RequestState.documentCache
@@ -425,6 +433,7 @@ define
 	     pathComponents:PathComponents
 
 	     state:RequestState
+	     changeSessionId:SIC
 	    )}
       Res
       HeadersToSend
@@ -441,7 +450,8 @@ define
 	  %% to make the private dict local
 	  DefaultCookiePath = {Routing.buildPath [PathComponents.app]}
 	  PSession =
-	  {Session.'prepare' State App.logger CSession Req Inputs DefaultCookiePath}
+	  {Session.'prepare' State App.logger CSession
+	   Req Inputs DefaultCookiePath SIC}
 	  RealFun = {NewCell {CallBefore PSession App Functr Function}}
 	  FunResult
 	  DocumentCache = {Value.byNeed
@@ -553,15 +563,14 @@ define
       end
    end
 	   
-   %% .../abc/def/ghi?a=c;b=d -> .../abc/def
+   %% .../abc/def/ghi?a=c;b=d -> /.../abc/def
    fun {RemoveClosureId URI}
       Parts = {String.tokens URI &/}
-      StartingParts NonEmptyStartingParts
+      ButLast = {List.take Parts {Length Parts}-1}
+      NonEmpty = {Filter ButLast fun {$ S} S \= nil end}
    in
-      StartingParts = {List.take Parts {Length Parts}-1}
-      NonEmptyStartingParts = {Filter StartingParts fun {$ S} S \= nil end}
-      {VirtualString.toString "/"#{Intercalate NonEmptyStartingParts "/"}}
-   end
+      {Append "/" {Intercalate NonEmpty "/"}}
+   end      
 
    fun {MakeURL PathComponents Url}
       case Url of url(...) then

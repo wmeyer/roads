@@ -143,6 +143,7 @@ define
    fun {LoginSuccess Session User Cont}
       {Session.set loginInProgress false}
       {Session.setShared user User}
+      {Session.regenerateSessionId}
       redirect(303 Cont)
    end
 

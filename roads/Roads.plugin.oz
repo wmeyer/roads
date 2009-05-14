@@ -139,10 +139,12 @@ define
 	      case {Session.idFromRequest Req} of nothing then {NewSessionId}
 	      [] just(S) then S
 	      end
-	      NextSessionId = {NewSessionId}
+	      NextSessionIdCandidate = {NewSessionId}
+	      SessionIdChanged = {NewCell false}
 	   in
 	      %% TODO find AppServer for id
-	      {State.localAppServer.handleRequest Type Req Inputs SessionId NextSessionId}
+	      {State.localAppServer.handleRequest
+	       Type Req Inputs SessionId NextSessionIdCandidate ?SessionIdChanged}
 	      %% TODO: failover
 	      %% update id registry with NewSessionId
 	      %% TODO: expired session from appserver
