@@ -48,9 +48,9 @@ define
       LogLevel = {CondSelect State.roadsConfig logLevel trace}
       LogDir = {Atom.toString {Resolve.localize State.serverConfig.logDir}.1}
 
-      Stream = if State.isLocal then State.serverConfig.logStream
+      Stream = if State.appServerName == 'local' then State.serverConfig.logStream
 	       else
-		  {Logging.newStream init(State.serverConfig.errorLogFile dir:LogDir)}
+		  {Logging.newStream init(State.appServerName#".log" dir:LogDir)}
 	       end
    in
       LoggerStream = Stream
@@ -67,14 +67,15 @@ define
    %% Logger (take from server config if local; otherwise create)
    %% Call OnDistribute to get updated ressources if not local
    %% initialize rest of state
-   proc {Initialize RoadsConfig ServerConfig OriginalApplications IsLocal}
-      State = unit(applications:{Record.map OriginalApplications fun {$ A} {DistributeApp A IsLocal} end}
+   proc {Initialize RoadsConfig ServerConfig OriginalApplications ServerName}
+      State = unit(applications:{Record.map OriginalApplications
+				 fun {$ A} {DistributeApp A ServerName=='local'} end}
 		   sessions:{NewSessionCache RoadsConfig}
 		   closureIdIssuer:{IdIssuer.create 4}
 		   serverConfig:ServerConfig
 		   roadsConfig:RoadsConfig
 		   documentCache:{New DocumentCache.'class' init}
-		   isLocal:IsLocal
+		   appServerName:ServerName
 		  )
       Logger = {CreateRoadsLogger}
    end
@@ -142,7 +143,7 @@ define
 		   serverConfig:ServerConfig
 		   roadsConfig:RoadsConfig
 		   documentCache:{New DocumentCache.'class' init}
-		   isLocal:OldState.isLocal
+		   appServerName:OldState.appServerName
 		  )
       Logger = {CreateRoadsLogger}
    end
@@ -154,7 +155,8 @@ define
 
    %% returns Maybe( Response )
    fun {HandleRequest Type Req=request(uri:URI ...) Inputs
-	SessionId NextSessionIdCandidate SessionIdChanged}
+	sessionId(id:SessionId next:NextSessionIdCandidate
+		  isNew:SessionIdIsNew changed:?SessionIdChanged)}
       Path = URI.path
       RSession
       case {Session.get State SessionId} of just(S) then
@@ -281,6 +283,8 @@ define
       in
 	 if @SessionIdChanged then
 	    {State.sessions move(SessionId NextSessionIdCandidate) _}
+	 end
+	 if SessionIdIsNew orelse @SessionIdChanged then
 	    just( {AddSessionCookie TheResponse NextSessionIdCandidate PathComponents} )
 	 else
 	    just( TheResponse )

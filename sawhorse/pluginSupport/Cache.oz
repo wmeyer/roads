@@ -24,6 +24,25 @@ define
 	    case Request of condGet(Key DefVal) then
 	       Result = {Dictionary.condGet @Cache Key DefVal#unit}.1
 	       (@Cache).Key := Result#{Now}
+	    [] get(Key) then
+	       if {Dictionary.member @Cache Key} then
+		  Val = (@Cache).Key.1
+	       in
+		  (@Cache).Key := Val#{Now}
+		  Result = just(Val)
+	       else
+		  Result = nothing
+	       end
+	    [] set(Key NewVal) then
+	       (@Cache).Key := NewVal#{Now}
+	       Result = unit
+	    [] setIfFree(Key NewVal) then
+	       if {Dictionary.member @Cache Key} then
+		  Result = false
+	       else
+		  (@Cache).Key := NewVal#{Now}
+		  Result = true
+	       end
 	    [] condGetUncached(Key DefVal) then
 	       case {Dictionary.condGet @Cache Key Nothing#unit}.1
 	       of !Nothing then Result = DefVal

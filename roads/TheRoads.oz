@@ -5,6 +5,7 @@ import
 export
    Reset
    SetOption
+   AddAppServer
    SetSawhorseOption
    RegisterFunction
    RegisterFunctor
@@ -21,6 +22,7 @@ define
    {Instance.setSawhorseOption errorLogFile "http-error.log"}
    Reset = Instance.reset
    SetOption = Instance.setOption
+   AddAppServer = Instance.addAppServer
    SetSawhorseOption = Instance.setSawhorseOption
    RegisterFunction = Instance.registerFunction
    RegisterFunctor = Instance.registerFunctor

@@ -13,6 +13,7 @@ export
    IsRunning
    ShutDown
    ColdRestart
+   AddAppServer
 define
    SawhorseConfig = {NewCell config}
    RoadsConfig = {NewCell config}
@@ -30,9 +31,22 @@ define
       end
    end
 
+   proc {SetOptionUnlocked Option Value}
+      RoadsConfig := {AdjoinAt @RoadsConfig Option Value}
+   end
+   
    proc {SetOption Option Value}
       lock L then
-	 RoadsConfig := {AdjoinAt @RoadsConfig Option Value}
+	 {SetOptionUnlocked Option Value}
+      end
+   end
+
+   proc {AddAppServer ServerName RemoteManagerInit Options}
+      lock L then
+	 AppServers = {CondSelect @RoadsConfig appServers unit}
+      in
+	 {SetOptionUnlocked appServers
+	  {AdjoinAt AppServers ServerName server(init:RemoteManagerInit options:Options)}}
       end
    end
    
