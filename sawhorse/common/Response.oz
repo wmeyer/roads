@@ -91,7 +91,7 @@ define
 	 {Socket write(vs:Stuff)}
 	 {Socket flush}
       [] fileBody(_ Filename) then
-	 {WithOpenFile Filename [read]
+	 {WithOpenFile Filename [read binary]
 	  proc {$ File}
 	     {Squirt File Socket}
 	     {Socket flush}

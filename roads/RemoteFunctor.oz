@@ -1,7 +1,7 @@
 functor
 import
+   DP
    Property
-   Module
 export
    Create
 define
@@ -11,25 +11,28 @@ define
    %% Exceptions from application code are forwarded to the local machine.
    %% Customizable timeout: property 'remoteFunctor.timeout'
    %%
-   %% URL: where the functor is installed both locally(!!) and at the remote site
+   %% URL: where the functor is installed at the remote site
    %% RemoteManager: properly initialized Remote.manager
-   %% Return: a record that behaves like an applied functor.
+   %% Return: a record that behaves like an applied functor
    fun {Create URL RemoteManager}
-      Prt
-      Res = {CreateClient URL Prt RemoteManager} %% create local client first (fail cheaply)
+      ModSpec
+      Prt = {StartRemoteFunctor RemoteManager URL ?ModSpec}
    in
-      Prt = {StartRemoteFunctor RemoteManager URL}
       if {Value.isFailed Prt} then raise Prt end end
-      Res
+      {CreateClient ModSpec Prt}
    end
 
-   %% returns a distributed port
-   fun {StartRemoteFunctor RemoteManager URL}
+   %% Returns a distributed port.
+   %% In ModSpec: record that describes the linked module.
+   %% (We cannot link the module locally because for some reason(?), we
+   %% cannot use "Module" in this functor.)
+   fun {StartRemoteFunctor RemoteManager URL ?ModSpec}
       functor F
       import
 	 Module
       export
 	 Prt
+	 Spec
       define
 	 fun {CreateServer Mod}
 	    P
@@ -47,18 +50,28 @@ define
 	    P
 	 end
 
-	 Functr Prt
+	 fun {CreateSpec Mod}
+	    {Record.map Functr
+	     fun {$ F}
+		if {Procedure.is F} then procedure({Procedure.arity F})
+		else nothing
+		end
+	     end}
+	 end
 	 
+	 Functr Prt Spec
 	 try
 	    [Functr] = {Module.link [URL]}
-	    {Record.forAll Functr Value.makeNeeded}
+	    Spec = {CreateSpec Functr}
 	    Prt = {CreateServer Functr}
 	 catch _ then
 	    Prt = {Value.failed remoteFunctor(cannotLinkFunctorAtRemoteSite manager:RemoteManager url:URL)}
 	 end
       end
+      AF = {RemoteManager apply(F $)}
    in
-      {RemoteManager apply(F $)}.prt
+      ModSpec = AF.spec
+      AF.prt
    end
 
    %% like Port.sendRecv but with timeout
@@ -72,21 +85,37 @@ define
       else remoteFunctor(timeout msg:Msg)
       end
    end
+
+   ImplementationHasFaultStreams = try {HasFeature DP getFaultStream} catch _ then false end
    
-   fun {CreateClient URL P RM}
-      [Mod] = {Module.link [URL]}
-   in
-      {Record.mapInd Mod
+   CheckFaultState = if ImplementationHasFaultStreams then
+			proc {$ P}
+			   case {DP.getFaultStream P}
+			   of ok|_ then skip
+			   [] FailType|_ then raise remoteFunctor(FailType) end
+			   end
+			end
+		     else
+			proc {$ P}
+			   skip
+			end
+		     end
+   
+   %% 
+   fun {CreateClient ModSpec Prt}
+      {Record.mapInd ModSpec
        fun {$ Ind F}
-	  if {IsDet F} andthen {Procedure.is F} then
+	  case F of procedure(Ar) then
 	     proc {CallWith Args}
-		case {SendRecv P Ind#Args} of unit then skip
+		{CheckFaultState Prt}
+		case {SendRecv Prt Ind#Args} of unit then skip
+		[] E=remoteFunctor(...) then raise E end
 		[] E then
-		   raise remoteFunctor(applicationException:E manager:RM url:URL) end
+		   raise remoteFunctor(applicationException:E) end
 		end
 	     end
 	  in			  
-	     case {Procedure.arity F}
+	     case Ar
 	     of 0 then proc {$} {CallWith nil} end
 	     [] 1 then proc {$ A1} {CallWith [A1]} end
 	     [] 2 then proc {$ A1 A2} {CallWith [A1 A2]} end
