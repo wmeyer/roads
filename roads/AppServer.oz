@@ -29,6 +29,7 @@ import
    Session at 'x-ozlib://wmeyer/roads/Session.ozf'
    Cookie(toHeader) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cookie.ozf'
    Logging(newLogger:NewLogger newStream) at 'x-ozlib://wmeyer/sawhorse/common/Logging.ozf'
+   Module
 export
    Initialize
    Reinitialize
@@ -45,13 +46,13 @@ define
    DefaultCacheDuration = 2*60*1000
    
    fun {CreateRoadsLogger}
-      LogLevel = {CondSelect State.roadsConfig logLevel trace}
-      LogDir = {Atom.toString {Resolve.localize State.serverConfig.logDir}.1}
+      LogLevel = trace % {CondSelect State.roadsConfig logLevel trace}
+      LogDir = "C:/" %{Atom.toString {Resolve.localize State.serverConfig.logDir}.1}
 
-      Stream = if State.appServerName == 'local' then State.serverConfig.logStream
-	       else
-		  {Logging.newStream init(State.appServerName#".log" dir:LogDir)}
-	       end
+      Stream = %if State.appServerName == 'local' then State.serverConfig.logStream
+	       %else
+		  {Logging.newStream init("appserver.log" dir:LogDir)} %State.appServerName#".log" dir:LogDir)}
+	       %end
    in
       LoggerStream = Stream
       {NewLogger init(module:"appserver"
@@ -68,6 +69,8 @@ define
    %% Call OnDistribute to get updated ressources if not local
    %% initialize rest of state
    proc {Initialize RoadsConfig ServerConfig OriginalApplications ServerName}
+      Logger = {CreateRoadsLogger}
+      {Logger.trace "initialize"}
       State = unit(applications:{Record.map OriginalApplications
 				 fun {$ A} {DistributeApp A ServerName=='local'} end}
 		   sessions:{NewSessionCache RoadsConfig}
@@ -77,7 +80,7 @@ define
 		   documentCache:{New DocumentCache.'class' init}
 		   appServerName:ServerName
 		  )
-      Logger = {CreateRoadsLogger}
+      {Logger.trace "end of initialize"}
    end
 
    %% true -> true(Feat:unit)
@@ -93,13 +96,21 @@ define
    
    %% Adjust application to site. (Logger, resources, page caching)
    fun {DistributeApp App IsLocal}
+      {Logger.trace "DistributeApp1"}
       AppName = {CondSelect App.module appName app}
       LogLevel = {CondSelect App.module logLevel trace}
       AppLogger = {NewLogger init(module:AppName
 				  stream:LoggerStream
 				  logLevel:LogLevel)}
       Resources = if IsLocal then App.resources
-		  elseif {HasFeature App.module onDistribute} then {App.module.onDistribute App.resources}
+		  elseif {HasFeature App.module onDistribute} then
+		     Local = 'local'(link:fun {$ URL} {Module.link [URL] [$]} end)
+		  in
+		     {App.module.onDistribute
+		      {Adjoin App.resources
+		       session('local':Local
+			       logTrace:Logger.trace
+			       logError:Logger.error)}}
 		  else App.resources
 		  end
       FunctorPageCaching =
@@ -116,6 +127,7 @@ define
        {{CondSelect App.module pageCaching fun {$ _} false end}
 	Resources}}
    in
+      {Logger.trace "DistributeApp2"}
       {Adjoin App
        application(
 	  resources:Resources
@@ -155,10 +167,12 @@ define
 
    %% returns Maybe( Response )
    fun {HandleRequest Type Req=request(uri:URI ...) Inputs
-	sessionId(id:SessionId next:NextSessionIdCandidate
-		  isNew:SessionIdIsNew changed:?SessionIdChanged)}
+	S=sessionId(id:SessionId next:NextSessionIdCandidate
+		    isNew:SessionIdIsNew changed:_)}%changed:?SessionIdChanged)}
+      try
       Path = URI.path
-      RSession
+	 RSession
+	 SessionIdChanged = {NewCell false}
       case {Session.get State SessionId} of just(S) then
 	 RSession= S
       else
@@ -281,6 +295,7 @@ define
 	    end
 	 end
       in
+	 SessionIdChanged := false
 	 if @SessionIdChanged then
 	    {State.sessions move(SessionId NextSessionIdCandidate) _}
 	 end
@@ -289,6 +304,12 @@ define
 	 else
 	    just( TheResponse )
 	 end
+      end
+      catch E then
+	 {Logger.error "HandleRequest failed"}
+	 {Logger.error E}
+	 {Logger.exception E}
+	 exception({MakeStateless E nil})
       end
    end
 

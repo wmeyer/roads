@@ -9,6 +9,7 @@ export
    PagesExpireAfter
    UseTokenInLinks
    Init
+%   OnDistribute
    ShutDown
    Before
    After
@@ -25,6 +26,13 @@ define
       session(model:{Model.new})
    end
 
+   fun {OnDistribute session('local':Local logTrace:LT ...)}
+      {LT "OnDistribute"}
+      LocalModel = {Local.link 'x-ozlib://wmeyer/pollapp/Model.ozf'}
+   in
+      session(model:{LocalModel.new})
+   end
+   
    proc {ShutDown Session}
       {Session.model shutDown}
    end

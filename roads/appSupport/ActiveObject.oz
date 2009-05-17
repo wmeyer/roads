@@ -15,12 +15,9 @@
 %%  - {Object methodE(_): NOT okay; unbound, non-result param
 %%
 functor
-import
-   Pickle
 export
    new:NewActive
    NewInterface
-   Decouple
 define
    fun {NewInterface TheObject}
       Channel
@@ -44,7 +41,7 @@ define
    
    fun {MarshalMessage Msg ?ReturnValue}
       ReturnValue = {CondSelect Msg result _}
-      {Decouple
+      {Needed
        if {HasFeature Msg result} then {AdjoinAt Msg result unit} else Msg end
       }
    end
@@ -57,11 +54,9 @@ define
       end
    end
 
-   %% When sending bound variables from subordinate spaces, strange things happen.
-   %% In this way, we completely decouple the values from the variables.
-   fun {Decouple X}
+   fun {Needed X}
       {MakeNeeded X}
-      {Pickle.unpack {Pickle.pack X}}
+      X
    end
 
    proc {MakeNeeded X}

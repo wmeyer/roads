@@ -1,6 +1,6 @@
 functor
 import
-   DP
+%   DP
    Property
 export
    Create
@@ -53,7 +53,8 @@ define
 	 fun {CreateSpec Mod}
 	    {Record.map Functr
 	     fun {$ F}
-		if {Procedure.is F} then procedure({Procedure.arity F})
+		{Value.makeNeeded F}
+		if {IsDet F} andthen {Procedure.is F} then procedure({Procedure.arity F})
 		else nothing
 		end
 	     end}
@@ -65,7 +66,8 @@ define
 	    Spec = {CreateSpec Functr}
 	    Prt = {CreateServer Functr}
 	 catch _ then
-	    Prt = {Value.failed remoteFunctor(cannotLinkFunctorAtRemoteSite manager:RemoteManager url:URL)}
+	    Prt = {Value.failed remoteFunctor(cannotLinkFunctorAtRemoteSite
+					      manager:RemoteManager url:URL)}
 	 end
       end
       AF = {RemoteManager apply(F $)}
@@ -86,7 +88,7 @@ define
       end
    end
 
-   ImplementationHasFaultStreams = try {HasFeature DP getFaultStream} catch _ then false end
+/*   ImplementationHasFaultStreams = try {HasFeature DP getFaultStream} catch _ then false end
    
    CheckFaultState = if ImplementationHasFaultStreams then
 			proc {$ P}
@@ -100,14 +102,14 @@ define
 			   skip
 			end
 		     end
-   
+  */ 
    %% 
    fun {CreateClient ModSpec Prt}
       {Record.mapInd ModSpec
        fun {$ Ind F}
 	  case F of procedure(Ar) then
 	     proc {CallWith Args}
-		{CheckFaultState Prt}
+%		{CheckFaultState Prt}
 		case {SendRecv Prt Ind#Args} of unit then skip
 		[] E=remoteFunctor(...) then raise E end
 		[] E then

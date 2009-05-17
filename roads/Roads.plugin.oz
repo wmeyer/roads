@@ -16,6 +16,7 @@ define
 	   RemoteFunctor at 'x-ozlib://wmeyer/roads/RemoteFunctor.ozf'
 	   Remote
 	   System
+	   Cache(create) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cache.ozf'
 	export
 	   %% Plugin interface
 	   name:RoadsName
@@ -64,9 +65,12 @@ define
 	   end
 
 	   fun {AddAppServers LState OldState}
+	      {Logger.trace "AddAppServers"}
 	      RemoteAppServers = {CreateAppServers}
+	      {Logger.trace "created app servers"}
 	      %% always CREATE local server (but depending on options, only use as fallback)
 	      [LocalAppServer] = {Module.link ['x-ozlib://wmeyer/roads/AppServer.ozf']}
+	      {Logger.trace "linked local app server"}
 	      AppServers =
 	      if {CondSelect Config useLocalAsAppServer true} then
 		 {AdjoinAt RemoteAppServers 'local'
@@ -77,9 +81,11 @@ define
 	      end
 	      proc {Init ServerName AppServer IsLocal}
 		 if OldState == unit then
+		    {Logger.trace "initialize "#ServerName}
 		    {AppServer.initialize
 		     Config LState.serverConfig LState.applications ServerName}
 		 else
+		    {Logger.trace "reinitialize "#ServerName}
 		    {AppServer.reinitialize
 		     Config LState.serverConfig LState.applications
 		     OldState.appServers.ServerName}
@@ -92,6 +98,7 @@ define
 		 {Init ASName AS.module false}
 	       end
 	      }
+	      {Logger.trace "All app servers initialized"}
 	      {Adjoin LState
 	       unit(localAppServer:LocalAppServer
 		    remoteAppServers:{NewCell RemoteAppServers}
@@ -121,7 +128,8 @@ define
 	   end
 	   
 	   fun {NewSessionCache}
-	      {Session.newCache {CondSelect Config sessionDuration 60*60*1000}}
+	      {Cache.create {CondSelect Config sessionDuration 60*60*1000}
+	      proc {$ _} skip end}
 	   end
 
 	   %% Initialize all configured applications.
@@ -293,10 +301,13 @@ define
 		    %% remove NextSessionIdCandidate or just let expire?
 		    skip
 		 end
-		 TheResponse
+		 case TheResponse of exception(E) then {Logger.exception E}
+		    "error"
+		 else TheResponse
+		 end
 	      catch RF=remoteFunctor(Reason ...) then
 		 {Logger.error "app server failed:"}
-		 {Logger.logException RF}
+		 {Logger.exception RF}
 		 if Reason == permFail orelse Reason == timeout then
 		    NewSs
 		    OldSs = (State.appServers := NewSs)
