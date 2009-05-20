@@ -1,6 +1,6 @@
 functor
 import
-   DBServer at 'x-ozlib://wmeyer/db/RemoteServer.ozf'
+   DBServer at 'x-ozlib://wmeyer/db/Server.ozf'
    ActiveObject at 'x-ozlib://wmeyer/roads/appSupport/ActiveObject.ozf'
    MD5 at 'x-ozlib://wmeyer/sawhorse/pluginSupport/md5.so{native}'
    RandomBytesGenerator
@@ -15,9 +15,12 @@ define
    class Model
       feat
 	 db
+	 saltGenerator
 	 
       meth init
 	 self.db = {CreateDBServer}
+	 self.saltGenerator = {RandomBytesGenerator.create 4}
+
 	 {self createAdmin}
       end
 
@@ -100,7 +103,7 @@ define
 	 case {self.db select(user('*') where:[user(login) '=' Login] result:$)}
 	 of [_] then nothing
 	 [] nil then
-	    Salt = {SaltGenerator}
+	    Salt = {self.saltGenerator}
 	    Hash = {EncryptPassword Password Salt}
 	 in
 	    {self.db insert(user(login:Login password:Hash salt:Salt isAdmin:IsAdmin))}
@@ -131,8 +134,6 @@ define
       end
    end
    
-   SaltGenerator = {RandomBytesGenerator.create 4}
-
    fun {EncryptPassword Password Salt}
       {MD5.createHash {Append Salt Password}}
    end

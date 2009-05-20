@@ -47,11 +47,11 @@ define
    
    fun {CreateRoadsLogger}
       LogLevel = trace % {CondSelect State.roadsConfig logLevel trace}
-      LogDir = "C:/" %{Atom.toString {Resolve.localize State.serverConfig.logDir}.1}
+      LogDir = "/home/user/" %{Atom.toString {Resolve.localize State.serverConfig.logDir}.1}
 
       Stream = %if State.appServerName == 'local' then State.serverConfig.logStream
 	       %else
-		  {Logging.newStream init("appserver.log" dir:LogDir)} %State.appServerName#".log" dir:LogDir)}
+		  {Logging.newStream init(stderr dir:LogDir)} %State.appServerName#".log" dir:LogDir)}
 	       %end
    in
       LoggerStream = Stream

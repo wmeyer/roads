@@ -9,6 +9,7 @@ makefile(
 	'TheRoads.ozf'
 	'DocumentCache.ozf'
 	'Toplevel.ozf'
+	'EagerModuleManager.ozf'
        ]
    uri: 'x-ozlib://wmeyer/roads'
    mogul: 'mogul:/wmeyer/roads'      

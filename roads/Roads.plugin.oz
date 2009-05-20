@@ -17,6 +17,7 @@ define
 	   Remote
 	   System
 	   Cache(create) at 'x-ozlib://wmeyer/sawhorse/pluginSupport/Cache.ozf'
+	   EagerModuleManager at 'x-ozlib://wmeyer/roads/EagerModuleManager.ozf'
 	export
 	   %% Plugin interface
 	   name:RoadsName
@@ -142,7 +143,8 @@ define
 		       unit(applications:Applications
 			    sessionIdIssuer:{IdIssuer.create 8}
 			    sessions:{NewSessionCache}
-			    serverConfig:ServerConfig
+			    serverConfig:config(serverName:ServerConfig.serverName
+						serverAdmin:ServerConfig.serverAdmin)
 			   )
 		       unit}
 	   end
@@ -182,15 +184,23 @@ define
 	      }
 	   end
 
-	   fun {Link Functr}
-	      if {IsChunk Functr} then {Module.apply [Functr]}.1
-	      elseif {VirtualString.is Functr} then {Module.link [Functr]}.1
-	      elseif {Functor.is Functr} then Functr
-	      elseif {Record.is Functr} then Functr
-	      else raise roads(unknownTypeAsFunctor(Functr)) end
+	   %% Eager linking because:
+	   %%  Application functors are distributed.
+	   %%  If an imported functor has not been accessed locally, it will not work on the remote site.
+	   %%  (Probably because the remote site tries to use the local "Module" to lazy-link the imported functors.)
+	   local
+	      ModuleManager = {New EagerModuleManager.'class' init}
+	   in
+	      fun {Link Functr}
+		 if {IsChunk Functr} then {ModuleManager apply(Functr $)}
+		 elseif {VirtualString.is Functr} then {ModuleManager link(url:Functr $)}
+		 elseif {Functor.is Functr} then Functr
+		 elseif {Record.is Functr} then Functr
+		 else raise roads(unknownTypeAsFunctor(Functr)) end
+		 end
 	      end
 	   end
-
+	   
 	   %% Re-initialize an app from its previous state.
 	   fun {InitApp ServerConfig Functor OldResources}
 	      AppModule = {Link Functor}
@@ -225,10 +235,10 @@ define
 		  if {HasFeature AppMod shutDown} then {AppMod.shutDown R} end
 	       end
 	      }
-	      {State.localAppServer.module.shutDown}
-	      {Record.forAll State.remoteAppServers
+	      {State.localAppServer.shutDown}
+	      {Record.forAll @(State.remoteAppServers)
 	       proc {$ AS}
-		  {AS.moduleshutDown}
+		  {AS.module.shutDown}
 		  {AS.manager close}
 	       end
 	      }

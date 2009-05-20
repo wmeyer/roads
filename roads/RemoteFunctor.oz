@@ -38,11 +38,13 @@ define
 	    P
 	    thread
 	       for (ProcFeat#Args)#Sync in {Port.new $ P} do
-		  try
-		     {Procedure.apply Mod.ProcFeat Args}
-		     Sync = unit
-		  catch E then
-		     Sync = E
+		  thread
+		     try
+			{Procedure.apply Mod.ProcFeat Args}
+			Sync = unit
+		     catch E then
+			Sync = E
+		     end
 		  end
 	       end
 	    end
@@ -79,7 +81,7 @@ define
    %% like Port.sendRecv but with timeout
    fun {SendRecv P Msg}
       Events = unit(1:{Port.sendRecv P Msg}
-		    2:{Time.alarm {Property.condGet 'remoteFunctor.timeout' 2000}}
+		    2:{Time.alarm {Property.condGet 'remoteFunctor.timeout' 10000}}
 		   )
    in
       case {Record.waitOr Events}
