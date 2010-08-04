@@ -8,7 +8,6 @@ export
    LoadPlugins
    InitializePlugins
    ShutDownPlugins
-   Find
    Call
 define
    fun {LoadPlugins Config}
@@ -58,17 +57,15 @@ define
        proc {$ P} {P.shutDown} end}
    end
    
-   fun {Find Config Req}
+   fun {Call Config Proc Req}
       for P in {Record.toList Config.plugins} return:R default:nothing do
-	 if {P.wantsRequest Req} then {R just(P)} end
+	 {Config.trace "trying plugin "#P.name}
+	 case {P.Proc Config Req} of just(Response) then
+	    {Config.trace "call to plugin "#P.name#" finished with response"}
+	    {R just(Response)}
+	 else
+	    {Config.trace "call to plugin "#P.name#" rejected"}
+	 end
       end
-   end
-
-   fun {Call Config Plugin Proc Req Inputs}
-      {Config.trace "call plugin "#Plugin.name}
-      R = {Plugin.Proc Config Req Inputs}
-   in
-      {Config.trace "call to plugin "#Plugin.name#" finished"}
-      R
    end
 end

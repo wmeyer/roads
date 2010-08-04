@@ -410,26 +410,21 @@ define
 
    HandleGetRequest = {MakeRequestHandler
 		       fun {$ Config Req=request(uri:URI headers:Hs ...) BodyFlag}
-			  case {Plugin.find Config Req}
-			  of nothing then
+			  case {Plugin.call Config handleGetRequest Req}
+			  of just(Response) then Response
+			  [] nothing then
 			     if Req.uri.query \= unit then {NotFoundResponse Config}
 			     else {GetFile Config {MakeRelativePath URI.path} BodyFlag Hs}
 			     end
-			  [] just(P) then
-			     Values = {Query.parse Req.uri.query}
-			  in
-			     {Plugin.call Config P handleGetRequest Req Values}
 			  end
 		       end
 		      }
+
    HandlePostRequest = {MakeRequestHandler
 			fun {$ Config Req _}
-			   case {Plugin.find Config Req}
-			   of nothing then {BadRequestResponse Config}
-			   [] just(P) then
-			      Values = {Query.parse Req.body}
-			   in
-			      {Plugin.call Config P handlePostRequest Req Values}
+			   case {Plugin.call Config handlePostRequest Req}
+			   of just(Response) then Response
+			   [] nothing then {BadRequestResponse Config}
 			   end
 			end
 		       }

@@ -39,7 +39,6 @@ define
 	   Initialize
 	   Reinitialize
 	   ShutDown
-	   WantsRequest
 	   HandleGetRequest
 	   HandlePostRequest
    
@@ -49,7 +48,7 @@ define
 	   State
 	   Logger
 	   
-	   RoadsName = "Roads 0.2"
+	   RoadsName = "Roads 0.4"
 	   
 	   SecretGenerator = {IdIssuer.create 4}
 
@@ -150,20 +149,15 @@ define
 	      }
 	   end
 
-	   %% Check whether we want to process the given request: check whether
-	   %% there is a function for the given path.
-	   fun {WantsRequest Req=request(uri:URI ...)}
-	      case {Routing.getFunction {StateFromRequest Req} URI.path}
-	      of nothing then false
-	      [] just(_) then true
-	      end
-	   end
-
-	   fun {HandleGetRequest ServerConfig Req Inputs}
+	   fun {HandleGetRequest ServerConfig Req}
+	      Inputs = {Query.parse Req.uri.query}
+	   in
 	      {HandleRequest ServerConfig get Req Inputs}
 	   end
 
-	   fun {HandlePostRequest ServerConfig Req Inputs}
+	   fun {HandlePostRequest ServerConfig Req}
+	      Inputs = {Query.parse Req.body}
+	   in
 	      {HandleRequest ServerConfig post Req Inputs}
 	   end
 
@@ -171,135 +165,140 @@ define
 	   fun {HandleRequest ServerConfig Type Req=request(uri:URI ...) Inputs}
 	      {Logger.trace "Roads::HandleRequest"}
 	      Path = URI.path
-	      %% get session from cookie or create a new one
-	      IsNewSession
-	      SessionIdChanged
-	      RSession = case {Session.fromRequest State Req} of just(S) then
-			    IsNewSession = false
-			    S
-			 else
-			    SessionId = {Session.newId State}
-			 in
-			    {Logger.trace newSession}
-			    IsNewSession = true
-			    {State.sessions condGet(SessionId
-						    {Session.new State Path
-						     SessionId})}
-			 end
 	      %% find out which function to call (if no closure is given)
 	      %% (here we use request-dependent global state to use the old configuration
 	      %%  for old sessions)
 	      PathComponents
 	      App Functr Function MaybeClosureId
-	      {Routing.analyzePath {StateFromRequest Req} Path
-	       ?PathComponents ?App ?Functr ?Function ?MaybeClosureId}
-	      = true
-	      BasePath = PathComponents.basePath
-	      TheResponse =
-	      case MaybeClosureId of nothing then
-		 %% WITHOUT CLOSURE
-		 if Type == get then
-		    {Logger.trace "Roads::HandleRequest, get"}
-		    %% GET REQUEST: execute function
-		    {ExecuteGetRequest
-		     unit(serverConfig:ServerConfig
-			  app:App
-			  functr:Functr
-			  function:Function
-			  session:RSession
-			  req:Req
-			  inputs:Inputs
-			  pathComponents:PathComponents
-			  closureId:~1
-			  closureSpace:unit
-			  sessionIdChanged:SessionIdChanged
-			 )}
-		 elseif Type == post then
-		    %% POST REQUEST
-		    %% redirect to a get request to a newly created closure
-		    %% (Post/Redirect/Get pattern)
-		    NewClosureId = {Session.newClosureId State RSession}
-		 in
-		    {Logger.trace "Roads::HandleRequest, post"}
-		    {Session.addClosure
-		     unit(closureId:NewClosureId
-			  space:unit
-			  fork:false
-			  app:App
-			  functr:Functr
-			  session:{Session.prepareFutureSession RSession Inputs}
-			  function:Function)
-		    }
-		    {RedirectResponse ServerConfig 303
-		     {PathToClosure BasePath NewClosureId}}
-		 end
-	      [] just(ClosureIdS) then
-		 %% WITH CLOSURE (candidate)
-		 if {Not {Base62.is ClosureIdS}} then
-		    {NotFoundResponse ServerConfig}
-		 else
-		    ClosureId = {Base62.'from' ClosureIdS}
-		 in
-		    {Logger.trace "Roads::HandleRequest, got closure"}
-		    case {Session.getClosure RSession ClosureId}
-		    of nothing then %% expired closure
-		       NewPath = {RemoveClosureId Req.originalURI}
+	   in
+	      %% do we want this request?
+	      if {Not {Routing.analyzePath {StateFromRequest Req} Path
+		       ?PathComponents ?App ?Functr ?Function ?MaybeClosureId}}
+	      then %% no
+		 nothing
+	      else %% yes
+		 %% get session from cookie or create a new one
+		 IsNewSession
+		 SessionIdChanged
+		 RSession = case {Session.fromRequest State Req} of just(S) then
+			       IsNewSession = false
+			       S
+			    else
+			       SessionId = {Session.newId State}
+			    in
+			       {Logger.trace newSession}
+			       IsNewSession = true
+			       {State.sessions condGet(SessionId
+						       {Session.new State Path
+							SessionId})}
+			    end
+		 BasePath = PathComponents.basePath
+		 TheResponse =
+		 case MaybeClosureId of nothing then
+		    %% WITHOUT CLOSURE
+		    if Type == get then
+		       {Logger.trace "Roads::HandleRequest, get"}
+		       %% GET REQUEST: execute function
+		       {ExecuteGetRequest
+			unit(serverConfig:ServerConfig
+			     app:App
+			     functr:Functr
+			     function:Function
+			     session:RSession
+			     req:Req
+			     inputs:Inputs
+			     pathComponents:PathComponents
+			     closureId:~1
+			     closureSpace:unit
+			     sessionIdChanged:SessionIdChanged
+			    )}
+		    elseif Type == post then
+		       %% POST REQUEST
+		       %% redirect to a get request to a newly created closure
+		       %% (Post/Redirect/Get pattern)
+		       NewClosureId = {Session.newClosureId State RSession}
 		    in
-		       {Logger.trace
-			"Roads::HandleRequest, closure expired; redirecting to "#NewPath}
-		       %% redirect to same url without closure
-		       %% It is up to the single function to decide if it works
-		       %% without previous state
-		       {RedirectResponse ServerConfig 303 NewPath}
-		    [] just(Closure) then
-		       if Type == get then
-			  {Logger.trace "Roads::HandleRequest, get2"}
-			  %% GET REQUEST: execute function, possibly in cloned space.
-			  {ExecuteGetRequest
-			   unit(serverConfig:ServerConfig
-				app:Closure.app
-				functr:Closure.functr
-				function:Closure.function
-				session:Closure.session
-				req:Req
-				inputs:Inputs
-				pathComponents:PathComponents
-				closureId:ClosureId
-				closureSpace:if Closure.fork then
-						{Speculative.newSubspace Closure.space}
-					     else
-						Closure.space
-					     end
-				sessionIdChanged:SessionIdChanged
-			       )}
-		       elseif Type == post then
-			  %% POST REQUEST (redirect to get request of closure
-			  %% with bound params)
-			  NewClosureId = {Session.newClosureId State RSession}
-			  
+		       {Logger.trace "Roads::HandleRequest, post"}
+		       {Session.addClosure
+			unit(closureId:NewClosureId
+			     space:unit
+			     fork:false
+			     app:App
+			     functr:Functr
+			     session:{Session.prepareFutureSession RSession Inputs}
+			     function:Function)
+		       }
+		       {RedirectResponse ServerConfig 303
+			{PathToClosure BasePath NewClosureId}}
+		    end
+		 [] just(ClosureIdS) then
+		    %% WITH CLOSURE (candidate)
+		    if {Not {Base62.is ClosureIdS}} then
+		       {NotFoundResponse ServerConfig}
+		    else
+		       ClosureId = {Base62.'from' ClosureIdS}
+		    in
+		       {Logger.trace "Roads::HandleRequest, got closure"}
+		       case {Session.getClosure RSession ClosureId}
+		       of nothing then %% expired closure
+			  NewPath = {RemoveClosureId Req.originalURI}
 		       in
-			  {Logger.trace "Roads::HandleRequest, post2"}
-			  {Session.addClosure
-			   unit(closureId:NewClosureId
-				space:Closure.space
-				fork:Closure.fork
-				app:App
-				functr:Functr
-				session:{Session.prepareFutureSession
-					 Closure.session Inputs}
-				function:Closure.function)
-			  }
-			  {RedirectResponse ServerConfig 303
-			   {PathToClosure BasePath NewClosureId}}
+			  {Logger.trace
+			   "Roads::HandleRequest, closure expired; redirecting to "#NewPath}
+			  %% redirect to same url without closure
+			  %% It is up to the single function to decide if it works
+			  %% without previous state
+			  {RedirectResponse ServerConfig 303 NewPath}
+		       [] just(Closure) then
+			  if Type == get then
+			     {Logger.trace "Roads::HandleRequest, get2"}
+			     %% GET REQUEST: execute function, possibly in cloned space.
+			     {ExecuteGetRequest
+			      unit(serverConfig:ServerConfig
+				   app:Closure.app
+				   functr:Closure.functr
+				   function:Closure.function
+				   session:Closure.session
+				   req:Req
+				   inputs:Inputs
+				   pathComponents:PathComponents
+				   closureId:ClosureId
+				   closureSpace:if Closure.fork then
+						   {Speculative.newSubspace Closure.space}
+						else
+						   Closure.space
+						end
+				   sessionIdChanged:SessionIdChanged
+				  )}
+			  elseif Type == post then
+			     %% POST REQUEST (redirect to get request of closure
+			     %% with bound params)
+			     NewClosureId = {Session.newClosureId State RSession}
+			     
+			  in
+			     {Logger.trace "Roads::HandleRequest, post2"}
+			     {Session.addClosure
+			      unit(closureId:NewClosureId
+				   space:Closure.space
+				   fork:Closure.fork
+				   app:App
+				   functr:Functr
+				   session:{Session.prepareFutureSession
+					    Closure.session Inputs}
+				   function:Closure.function)
+			     }
+			     {RedirectResponse ServerConfig 303
+			      {PathToClosure BasePath NewClosureId}}
+			  end
 		       end
 		    end
 		 end
-	      end
-	   in
-	      if IsNewSession orelse {IsDet SessionIdChanged} andthen SessionIdChanged then
-		 {AddSessionCookie TheResponse RSession PathComponents}
-	      else
-		 TheResponse
+	      in
+		 if IsNewSession orelse {IsDet SessionIdChanged} andthen SessionIdChanged then
+		    just({AddSessionCookie TheResponse RSession PathComponents})
+		 else
+		    just(TheResponse)
+		 end
 	      end
 	   end
 
@@ -565,6 +564,7 @@ define
 		  else skip
 		  end
 	       end
+	       %% the actual mapping function
 	       fun {$ Name Val Parent}
 		  case Name of action andthen {Label Parent} == form then
 		     action#{ProcessTargetAttribute App Functr
@@ -621,7 +621,7 @@ define
 	   end
    
 	   fun {PathToClosure BasePath ClId}
-	      {VirtualString.toString BasePath#"/"#{Base62.to ClId}}
+	      {VirtualString.toString BasePath#"/$"#{Base62.to ClId}}
 	   end
    
 	   fun {CreateNewClosure Sess Path Fun Functr App ClosureSpace DoFork}

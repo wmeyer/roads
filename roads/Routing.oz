@@ -96,7 +96,7 @@ define
 			   FunctorR = Functor
 			   FunctionR = Fun
 			   {R true}
-			[] [ClId] then
+			[] [&$|ClId] then
 			   ClosureId = just(ClId)
 			   Components = ComponentsCandidate
 			   AppR = App
