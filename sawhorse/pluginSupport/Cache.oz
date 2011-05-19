@@ -43,8 +43,8 @@ define
 	       (@Cache).NewKey := Val#{Now}
 	       Result = unit
 	    end
-	    MinimizerThread := {StartMinimizer Cache Milliseconds Finalizer}
 	 end
+         MinimizerThread := {StartMinimizer Cache Milliseconds Finalizer}
       end
    in
       fun {$ Cmd}
